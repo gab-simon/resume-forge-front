@@ -310,6 +310,42 @@ Login is by a 6-digit code sent to the email; there is no password. These are th
 
 Components reach the session with `useAuthSession()`. After a login or a logout the query cache is cleared, so data of one account never shows up for another. Never read the tokens in a component and never send them anywhere but through the generated client.
 
+## Commits
+
+Commit or push only when the user asks. Work on a branch, never on `main` or
+`develop` directly: `feat/<short-topic>`, `fix/<short-topic>`, `chore/<short-topic>`.
+
+Message format, in English:
+
+```text
+<type>: <what changed, imperative, lowercase, no period>
+
+<optional body: why, and what a reviewer cannot see in the diff>
+```
+
+- Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `build`.
+- Subject at most 72 characters. Body lines at most 72 characters, only
+  when the subject is not enough; at most 5 short lines or bullets. Do not
+  list every file or repeat the diff.
+- No trailers or attribution: no `Co-Authored-By`, `Signed-off-by` or
+  "Generated with" lines, and no links to AI tools or chat sessions, in
+  commits, pull requests or versioned files.
+- One logical change per commit. Split unrelated changes; do not mix a
+  refactor with a feature.
+- Commit only after `bun run check` (and `bun run test:e2e` when a screen changed) pass.
+- Never commit secrets, `.env` files, build output, caches or test reports.
+- `openapi.json` and `src/api/generated` go in the same commit.
+- Prefer a new commit to rewriting history. Amend or force-push only when
+  the user asks, and only with `--force-with-lease` on a feature branch.
+
+Examples:
+
+```text
+feat: add email code login
+fix: keep the code step open after a wrong code
+docs: describe the restricted database role
+```
+
 ## Definition of done
 
 A task is complete only when all the items below are true:
@@ -338,4 +374,4 @@ A task is complete only when all the items below are true:
 - Add a second library for something the stack already covers: icons, dates, global state, HTTP requests, components.
 - Delete, skip (`.skip`) or loosen a test to make it pass.
 - Declare the task complete without having run `bun run check`.
-- Run Git commands that change the repository (commit, push, reset) without an explicit request from the user.
+- Run Git commands that change the repository (commit, push, reset) without an explicit request from the user. When asked, follow the section "Commits".
