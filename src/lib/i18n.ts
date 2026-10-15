@@ -21,7 +21,7 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
   "pt-BR": "Português (Brasil)",
 }
 
-/** Every key of src/locales/en-US.json, such as "items.toast.created". */
+/** Every key of src/locales/en-US.json, such as "account.toast.saved". */
 export type TranslationKey = ParseKeys
 
 export function isLanguage(value: unknown): value is Language {

@@ -28,8 +28,8 @@ export interface ApiCall {
  * and error parsing. Path segments that start with ":" are parameters.
  *
  *   const api = mockApi({
- *     "GET /api/v1/items": () => ({ body: { items: [], total: 0 } }),
- *     "DELETE /api/v1/items/:id": () => ({ status: 204 }),
+ *     "GET /api/v1/me": () => ({ body: user }),
+ *     "DELETE /api/v1/auth/sessions/:id": () => ({ status: 204 }),
  *   })
  *   expect(api.calls).toContainEqual(expect.objectContaining({ method: "DELETE" }))
  */

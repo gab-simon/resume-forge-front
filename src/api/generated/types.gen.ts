@@ -5,6 +5,344 @@ export type ClientOptions = {
 };
 
 /**
+ * AtsIssueResource
+ *
+ * Problem found in the text extracted from a resume PDF.
+ */
+export type AtsIssueResource = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * AtsReportResource
+ *
+ * Result of the ATS check of a built resume.
+ */
+export type AtsReportResource = {
+    /**
+     * Passed
+     */
+    passed: boolean;
+    /**
+     * Issues
+     */
+    issues: Array<AtsIssueResource>;
+    /**
+     * Text
+     */
+    text: string;
+};
+
+/**
+ * AuthenticationChallengeRequestResource
+ *
+ * HTTP payload used to request a login code by email.
+ */
+export type AuthenticationChallengeRequestResource = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Language
+     *
+     * Language of the email, and of the account if it is new.
+     */
+    language?: 'pt-BR' | 'en-US';
+};
+
+/**
+ * AuthenticationChallengeResource
+ *
+ * Public authentication challenge, the same for known and new emails.
+ */
+export type AuthenticationChallengeResource = {
+    /**
+     * Challenge Id
+     */
+    challenge_id: string;
+    /**
+     * Expires At
+     */
+    expires_at: string;
+    /**
+     * Expires In Seconds
+     */
+    expires_in_seconds: number;
+};
+
+/**
+ * AuthenticationCodeResource
+ *
+ * HTTP payload used to verify a code for one app or browser installation.
+ */
+export type AuthenticationCodeResource = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Device Id
+     */
+    device_id: string;
+    /**
+     * Platform
+     */
+    platform: 'android' | 'ios' | 'web';
+    /**
+     * Device Name
+     */
+    device_name?: string | null;
+};
+
+/**
+ * AuthenticationRefreshResource
+ *
+ * HTTP payload carrying a rotating refresh token.
+ */
+export type AuthenticationRefreshResource = {
+    /**
+     * Refresh Token
+     */
+    refresh_token: string;
+};
+
+/**
+ * AuthenticationSessionListResource
+ *
+ * List of active device sessions owned by a user.
+ */
+export type AuthenticationSessionListResource = {
+    /**
+     * Items
+     */
+    items: Array<AuthenticationSessionSummaryResource>;
+};
+
+/**
+ * AuthenticationSessionResource
+ *
+ * Access and refresh tokens issued after authentication.
+ */
+export type AuthenticationSessionResource = {
+    /**
+     * Auth Session Id
+     */
+    auth_session_id: number;
+    /**
+     * Access Token
+     */
+    access_token: string;
+    /**
+     * Token Type
+     */
+    token_type?: 'bearer';
+    /**
+     * Access Expires At
+     */
+    access_expires_at: string;
+    /**
+     * Access Expires In Seconds
+     */
+    access_expires_in_seconds: number;
+    /**
+     * Refresh Token
+     */
+    refresh_token: string;
+    /**
+     * Refresh Expires At
+     */
+    refresh_expires_at: string;
+    /**
+     * Refresh Expires In Seconds
+     */
+    refresh_expires_in_seconds: number;
+    /**
+     * Is New User
+     */
+    is_new_user: boolean;
+    user: UserResource;
+};
+
+/**
+ * AuthenticationSessionSummaryResource
+ *
+ * Safe representation of one authenticated device session.
+ */
+export type AuthenticationSessionSummaryResource = {
+    /**
+     * Auth Session Id
+     */
+    auth_session_id: number;
+    /**
+     * Device Id
+     */
+    device_id: string;
+    /**
+     * Device Name
+     */
+    device_name: string | null;
+    /**
+     * Platform
+     */
+    platform: string | null;
+    /**
+     * Authenticated At
+     */
+    authenticated_at: string;
+    /**
+     * Last Used At
+     */
+    last_used_at: string;
+    /**
+     * Access Expires At
+     */
+    access_expires_at: string;
+    /**
+     * Absolute Expires At
+     */
+    absolute_expires_at: string;
+};
+
+/**
+ * Basics
+ *
+ * Header of the resume. Contact data stays in the page body.
+ */
+export type Basics = {
+    /**
+     * Name
+     */
+    name: string;
+    headline: LocalizedText;
+    /**
+     * Location
+     */
+    location: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+    /**
+     * Links
+     *
+     * Visible link text, such as linkedin.com/in/user.
+     */
+    links?: Array<string>;
+};
+
+/**
+ * Bullet
+ *
+ * Achievement of an experience, with tags and pre-approved variants.
+ */
+export type Bullet = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    text: LocalizedText;
+    /**
+     * Variants
+     */
+    variants?: Array<LocalizedText>;
+};
+
+/**
+ * Certification
+ *
+ * Certification with its official name, issuer and year.
+ */
+export type Certification = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Issuer
+     */
+    issuer: string;
+    /**
+     * Year
+     */
+    year: number;
+};
+
+/**
+ * Education
+ *
+ * Degree or course.
+ */
+export type Education = {
+    /**
+     * Institution
+     */
+    institution: string;
+    degree: LocalizedText;
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * End
+     *
+     * Empty means in progress.
+     */
+    end?: string | null;
+};
+
+/**
+ * Experience
+ *
+ * Position held at a company.
+ */
+export type Experience = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Company
+     */
+    company: string;
+    title: LocalizedText;
+    location?: LocalizedText | null;
+    /**
+     * Start
+     */
+    start: string;
+    /**
+     * End
+     *
+     * Empty means current.
+     */
+    end?: string | null;
+    /**
+     * Bullets
+     */
+    bullets?: Array<Bullet>;
+    /**
+     * Technologies
+     */
+    technologies?: Array<string>;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -14,92 +352,181 @@ export type HttpValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type Lang = 'pt' | 'en';
+
 /**
- * ItemCreateResource
+ * Language
  *
- * HTTP payload used to create an item.
+ * Spoken language and level.
  */
-export type ItemCreateResource = {
+export type Language = {
+    name: LocalizedText;
+    level: LocalizedText;
+};
+
+export type LocalizedText = string | {
+    [key in Lang]?: string;
+};
+
+/**
+ * Project
+ *
+ * Open source, side project or relevant case.
+ */
+export type Project = {
+    /**
+     * Id
+     */
+    id: string;
     /**
      * Name
      */
     name: string;
     /**
-     * Description
+     * Url
      */
-    description?: string | null;
+    url?: string | null;
+    description: LocalizedText;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    /**
+     * Technologies
+     */
+    technologies?: Array<string>;
 };
 
 /**
- * ItemPageResource
+ * ResumeResource
  *
- * Paginated HTTP response containing items.
+ * HTTP representation of the master resume, as written in ``cv.yaml``.
  */
-export type ItemPageResource = {
+export type ResumeResource = {
+    basics: Basics;
+    summary?: LocalizedText | null;
+    /**
+     * Experience
+     */
+    experience?: Array<Experience>;
+    /**
+     * Projects
+     */
+    projects?: Array<Project>;
+    /**
+     * Skills
+     */
+    skills?: Array<SkillGroup>;
+    /**
+     * Education
+     */
+    education?: Array<Education>;
+    /**
+     * Certifications
+     */
+    certifications?: Array<Certification>;
+    /**
+     * Languages
+     */
+    languages?: Array<Language>;
+    /**
+     * Section Order
+     *
+     * Sections in the order they appear. Omitted ones are hidden.
+     */
+    section_order?: Array<SectionName>;
+};
+
+/**
+ * SectionName
+ *
+ * Sections a resume can show, in the default order.
+ */
+export type SectionName = 'summary' | 'experience' | 'projects' | 'skills' | 'education' | 'certifications' | 'languages';
+
+/**
+ * SkillGroup
+ *
+ * Category of technical skills.
+ */
+export type SkillGroup = {
+    category: LocalizedText;
     /**
      * Items
      */
-    items: Array<ItemResource>;
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * Offset
-     */
-    offset: number;
-    /**
-     * Limit
-     */
-    limit: number;
+    items: Array<string>;
 };
 
 /**
- * ItemResource
+ * TemplateResource
  *
- * HTTP representation of an item.
+ * HTTP representation of a resume template.
  */
-export type ItemResource = {
-    /**
-     * Item Id
-     */
-    item_id: number;
+export type TemplateResource = {
     /**
      * Name
      */
     name: string;
+};
+
+/**
+ * UserResource
+ *
+ * HTTP representation of the authenticated user.
+ */
+export type UserResource = {
     /**
-     * Description
+     * User Id
      */
-    description: string | null;
+    user_id: number;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Name
+     */
+    name: string | null;
+    /**
+     * Ui Language
+     */
+    ui_language: 'pt-BR' | 'en-US';
+    /**
+     * Resume Language
+     */
+    resume_language: 'pt' | 'en';
+    /**
+     * Default Template
+     */
+    default_template: string;
     /**
      * Created At
      */
     created_at: string;
-    /**
-     * Updated At
-     */
-    updated_at: string;
-    /**
-     * Deleted At
-     */
-    deleted_at: string | null;
 };
 
 /**
- * ItemUpdateResource
+ * UserUpdateResource
  *
- * HTTP payload used to partially update an item.
+ * HTTP payload used to update the name and preferences of the user.
  */
-export type ItemUpdateResource = {
+export type UserUpdateResource = {
     /**
      * Name
      */
     name?: string | null;
     /**
-     * Description
+     * Ui Language
      */
-    description?: string | null;
+    ui_language?: 'pt-BR' | 'en-US' | null;
+    /**
+     * Resume Language
+     */
+    resume_language?: 'pt' | 'en' | null;
+    /**
+     * Default Template
+     */
+    default_template?: string | null;
 };
 
 /**
@@ -130,22 +557,6 @@ export type ValidationError = {
     };
 };
 
-export type HealthHealthReadinessData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/health/v1/readiness';
-};
-
-export type HealthHealthReadinessResponses = {
-    /**
-     * Successful Response
-     */
-    200: string;
-};
-
-export type HealthHealthReadinessResponse = HealthHealthReadinessResponses[keyof HealthHealthReadinessResponses];
-
 export type HealthHealthLivenessData = {
     body?: never;
     path?: never;
@@ -162,159 +573,354 @@ export type HealthHealthLivenessResponses = {
 
 export type HealthHealthLivenessResponse = HealthHealthLivenessResponses[keyof HealthHealthLivenessResponses];
 
-export type ItemsReadItemsData = {
+export type HealthHealthReadinessData = {
     body?: never;
     path?: never;
-    query?: {
-        /**
-         * Name
-         */
-        name?: string | null;
-        /**
-         * Description
-         */
-        description?: string | null;
-        /**
-         * Offset
-         */
-        offset?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/v1/items';
+    query?: never;
+    url: '/health/v1/readiness';
 };
 
-export type ItemsReadItemsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ItemsReadItemsError = ItemsReadItemsErrors[keyof ItemsReadItemsErrors];
-
-export type ItemsReadItemsResponses = {
+export type HealthHealthReadinessResponses = {
     /**
      * Successful Response
      */
-    200: ItemPageResource;
+    200: string;
 };
 
-export type ItemsReadItemsResponse = ItemsReadItemsResponses[keyof ItemsReadItemsResponses];
+export type HealthHealthReadinessResponse = HealthHealthReadinessResponses[keyof HealthHealthReadinessResponses];
 
-export type ItemsCreateItemData = {
-    body: ItemCreateResource;
+export type AuthenticationRequestAuthenticationCodeData = {
+    body: AuthenticationChallengeRequestResource;
     path?: never;
     query?: never;
-    url: '/api/v1/items';
+    url: '/api/v1/auth/challenges';
 };
 
-export type ItemsCreateItemErrors = {
+export type AuthenticationRequestAuthenticationCodeErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ItemsCreateItemError = ItemsCreateItemErrors[keyof ItemsCreateItemErrors];
+export type AuthenticationRequestAuthenticationCodeError = AuthenticationRequestAuthenticationCodeErrors[keyof AuthenticationRequestAuthenticationCodeErrors];
 
-export type ItemsCreateItemResponses = {
+export type AuthenticationRequestAuthenticationCodeResponses = {
     /**
      * Successful Response
      */
-    201: ItemResource;
+    202: AuthenticationChallengeResource;
 };
 
-export type ItemsCreateItemResponse = ItemsCreateItemResponses[keyof ItemsCreateItemResponses];
+export type AuthenticationRequestAuthenticationCodeResponse = AuthenticationRequestAuthenticationCodeResponses[keyof AuthenticationRequestAuthenticationCodeResponses];
 
-export type ItemsDeleteItemData = {
+export type AuthenticationVerifyAuthenticationCodeData = {
+    body: AuthenticationCodeResource;
+    path: {
+        /**
+         * Challenge Id
+         */
+        challenge_id: string;
+    };
+    query?: never;
+    url: '/api/v1/auth/challenges/{challenge_id}/verify';
+};
+
+export type AuthenticationVerifyAuthenticationCodeErrors = {
+    /**
+     * Invalid, expired, consumed, or blocked code.
+     */
+    401: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthenticationVerifyAuthenticationCodeError = AuthenticationVerifyAuthenticationCodeErrors[keyof AuthenticationVerifyAuthenticationCodeErrors];
+
+export type AuthenticationVerifyAuthenticationCodeResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthenticationSessionResource;
+};
+
+export type AuthenticationVerifyAuthenticationCodeResponse = AuthenticationVerifyAuthenticationCodeResponses[keyof AuthenticationVerifyAuthenticationCodeResponses];
+
+export type AuthenticationRefreshAuthenticationSessionData = {
+    body: AuthenticationRefreshResource;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/refresh';
+};
+
+export type AuthenticationRefreshAuthenticationSessionErrors = {
+    /**
+     * Invalid, expired, consumed, or reused refresh token.
+     */
+    401: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthenticationRefreshAuthenticationSessionError = AuthenticationRefreshAuthenticationSessionErrors[keyof AuthenticationRefreshAuthenticationSessionErrors];
+
+export type AuthenticationRefreshAuthenticationSessionResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthenticationSessionResource;
+};
+
+export type AuthenticationRefreshAuthenticationSessionResponse = AuthenticationRefreshAuthenticationSessionResponses[keyof AuthenticationRefreshAuthenticationSessionResponses];
+
+export type AuthenticationReadAuthenticatedSessionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/sessions';
+};
+
+export type AuthenticationReadAuthenticatedSessionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthenticationSessionListResource;
+};
+
+export type AuthenticationReadAuthenticatedSessionsResponse = AuthenticationReadAuthenticatedSessionsResponses[keyof AuthenticationReadAuthenticatedSessionsResponses];
+
+export type AuthenticationDeleteAuthenticatedSessionData = {
     body?: never;
     path: {
         /**
-         * Item Id
+         * Auth Session Id
          */
-        item_id: number;
+        auth_session_id: number;
     };
     query?: never;
-    url: '/api/v1/items/{item_id}';
+    url: '/api/v1/auth/sessions/{auth_session_id}';
 };
 
-export type ItemsDeleteItemErrors = {
+export type AuthenticationDeleteAuthenticatedSessionErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ItemsDeleteItemError = ItemsDeleteItemErrors[keyof ItemsDeleteItemErrors];
+export type AuthenticationDeleteAuthenticatedSessionError = AuthenticationDeleteAuthenticatedSessionErrors[keyof AuthenticationDeleteAuthenticatedSessionErrors];
 
-export type ItemsDeleteItemResponses = {
+export type AuthenticationDeleteAuthenticatedSessionResponses = {
     /**
      * Successful Response
      */
     204: void;
 };
 
-export type ItemsDeleteItemResponse = ItemsDeleteItemResponses[keyof ItemsDeleteItemResponses];
+export type AuthenticationDeleteAuthenticatedSessionResponse = AuthenticationDeleteAuthenticatedSessionResponses[keyof AuthenticationDeleteAuthenticatedSessionResponses];
 
-export type ItemsReadItemData = {
+export type AuthenticationLogoutData = {
+    body: AuthenticationRefreshResource;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/logout';
+};
+
+export type AuthenticationLogoutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthenticationLogoutError = AuthenticationLogoutErrors[keyof AuthenticationLogoutErrors];
+
+export type AuthenticationLogoutResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthenticationLogoutResponse = AuthenticationLogoutResponses[keyof AuthenticationLogoutResponses];
+
+export type MeReadMeData = {
     body?: never;
-    path: {
-        /**
-         * Item Id
-         */
-        item_id: number;
-    };
+    path?: never;
     query?: never;
-    url: '/api/v1/items/{item_id}';
+    url: '/api/v1/me';
 };
 
-export type ItemsReadItemErrors = {
+export type MeReadMeResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserResource;
+};
+
+export type MeReadMeResponse = MeReadMeResponses[keyof MeReadMeResponses];
+
+export type MeUpdateMeData = {
+    body: UserUpdateResource;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me';
+};
+
+export type MeUpdateMeErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ItemsReadItemError = ItemsReadItemErrors[keyof ItemsReadItemErrors];
+export type MeUpdateMeError = MeUpdateMeErrors[keyof MeUpdateMeErrors];
 
-export type ItemsReadItemResponses = {
+export type MeUpdateMeResponses = {
     /**
      * Successful Response
      */
-    200: ItemResource;
+    200: UserResource;
 };
 
-export type ItemsReadItemResponse = ItemsReadItemResponses[keyof ItemsReadItemResponses];
+export type MeUpdateMeResponse = MeUpdateMeResponses[keyof MeUpdateMeResponses];
 
-export type ItemsUpdateItemData = {
-    body: ItemUpdateResource;
-    path: {
-        /**
-         * Item Id
-         */
-        item_id: number;
-    };
+export type ResumeReadResumeData = {
+    body?: never;
+    path?: never;
     query?: never;
-    url: '/api/v1/items/{item_id}';
+    url: '/api/v1/resume';
 };
 
-export type ItemsUpdateItemErrors = {
+export type ResumeReadResumeResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResumeResource;
+};
+
+export type ResumeReadResumeResponse = ResumeReadResumeResponses[keyof ResumeReadResumeResponses];
+
+export type ResumeReadTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/resume/templates';
+};
+
+export type ResumeReadTemplatesResponses = {
+    /**
+     * Response Resume-Read Templates
+     *
+     * Successful Response
+     */
+    200: Array<TemplateResource>;
+};
+
+export type ResumeReadTemplatesResponse = ResumeReadTemplatesResponses[keyof ResumeReadTemplatesResponses];
+
+export type ResumeReadResumeTextData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Language of the resume.
+         */
+        lang?: Lang;
+    };
+    url: '/api/v1/resume/text';
+};
+
+export type ResumeReadResumeTextErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ItemsUpdateItemError = ItemsUpdateItemErrors[keyof ItemsUpdateItemErrors];
+export type ResumeReadResumeTextError = ResumeReadResumeTextErrors[keyof ResumeReadResumeTextErrors];
 
-export type ItemsUpdateItemResponses = {
+export type ResumeReadResumeTextResponses = {
     /**
      * Successful Response
      */
-    200: ItemResource;
+    200: string;
 };
 
-export type ItemsUpdateItemResponse = ItemsUpdateItemResponses[keyof ItemsUpdateItemResponses];
+export type ResumeReadResumeTextResponse = ResumeReadResumeTextResponses[keyof ResumeReadResumeTextResponses];
+
+export type ResumeBuildResumePdfData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Template
+         *
+         * Template name.
+         */
+        template?: string;
+        /**
+         * Language of the resume.
+         */
+        lang?: Lang;
+    };
+    url: '/api/v1/resume/pdf';
+};
+
+export type ResumeBuildResumePdfErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResumeBuildResumePdfError = ResumeBuildResumePdfErrors[keyof ResumeBuildResumePdfErrors];
+
+export type ResumeBuildResumePdfResponses = {
+    /**
+     * Successful Response
+     */
+    200: Blob | File;
+};
+
+export type ResumeBuildResumePdfResponse = ResumeBuildResumePdfResponses[keyof ResumeBuildResumePdfResponses];
+
+export type ResumeCheckResumeData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Template
+         *
+         * Template name.
+         */
+        template?: string;
+        /**
+         * Language of the resume.
+         */
+        lang?: Lang;
+    };
+    url: '/api/v1/resume/check';
+};
+
+export type ResumeCheckResumeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResumeCheckResumeError = ResumeCheckResumeErrors[keyof ResumeCheckResumeErrors];
+
+export type ResumeCheckResumeResponses = {
+    /**
+     * Successful Response
+     */
+    200: AtsReportResource;
+};
+
+export type ResumeCheckResumeResponse = ResumeCheckResumeResponses[keyof ResumeCheckResumeResponses];

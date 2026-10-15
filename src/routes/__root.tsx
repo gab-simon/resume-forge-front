@@ -8,9 +8,11 @@ import { lazy, Suspense } from "react"
 import { ErrorScreen } from "@/components/layout/error-screen"
 import { NotFound } from "@/components/layout/not-found"
 import { APP_NAME } from "@/config/app"
+import type { AuthSession } from "@/features/auth"
 
 export interface RouterContext {
   queryClient: QueryClient
+  auth: AuthSession
 }
 
 // The devtools load only in development and are absent from the production bundle.

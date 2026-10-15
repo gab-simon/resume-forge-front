@@ -1,8 +1,8 @@
-# react-front-template
+# Resume Forge (front)
 
-Template de front-end em React e TypeScript para projetos que consomem uma API FastAPI. O resultado do build é uma SPA estática: HTML, CSS e JavaScript servidos por nginx ou por qualquer CDN.
+Front-end do Resume Forge, a plataforma de currículos ATS-friendly. Consome a API FastAPI do repositório [resume-forge](https://github.com/gab-simon/resume-forge). O resultado do build é uma SPA estática: HTML, CSS e JavaScript servidos por nginx ou por qualquer CDN.
 
-O ponto de partida foi a pasta `frontend/` do [full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template), reorganizada por feature e sem as telas de usuários e de autenticação.
+Nasceu do `react-front-template`, que veio da pasta `frontend/` do [full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template).
 
 ## O que vem pronto
 
@@ -14,16 +14,26 @@ O ponto de partida foi a pasta `frontend/` do [full-stack-fastapi-template](http
 - React Hook Form e Zod
 - Interface em inglês (`en-US`) e português do Brasil (`pt-BR`), com i18next
 - Biome, Vitest, Testing Library e Playwright
-- Uma feature de exemplo, `items`, com listagem paginada, criação, edição, exclusão e testes
+- Login por código enviado ao e-mail (feature `auth`) e configurações da conta (feature `account`)
 - `Dockerfile` com nginx e workflow do GitHub Actions
 - `AGENTS.md` com as regras que os agentes de código devem seguir
 
-O template não inclui autenticação. O `AGENTS.md` descreve onde adicioná-la.
+## Login
+
+Não há senha. A tela `/login` pede o e-mail, o back envia um código de 6 dígitos e a tela troca o código por um par de tokens. O primeiro login de um e-mail cria a conta.
+
+- Os tokens ficam no `localStorage` (`auth-session`), junto com um identificador fixo do navegador (`device-id`). O access token vale 60 minutos.
+- `src/api/client.ts` envia `Authorization: Bearer` só nas operações que o OpenAPI marca como autenticadas. Faltando menos de 1 minuto para expirar, a sessão troca o refresh token por um par novo antes da requisição. Várias requisições ao mesmo tempo compartilham uma só troca, porque o back revoga a sessão quando um refresh token é usado duas vezes.
+- Uma resposta 401 de uma operação autenticada encerra a sessão e leva ao `/login?redirect=...`. O 401 de um código errado no login não faz isso.
+- As rotas dentro de `src/routes/_app/` exigem sessão. Sem ela, `beforeLoad` redireciona para `/login`, que volta à página pedida depois do login.
+- No login, a interface passa para o idioma salvo na conta. Em `/settings`, a pessoa troca o nome, o idioma da interface, o idioma do currículo e o modelo padrão.
+
+Com o back em desenvolvimento (`EMAIL_BACKEND=console`), o código aparece no log da API em vez de ir por e-mail.
 
 ## Pré-requisitos
 
 - [Bun](https://bun.sh) 1.x. O template foi testado com a versão 1.4
-- Node.js, para rodar o Playwright. O template foi testado com a versão 26
+- Node.js 22 ou mais novo, para o gerador de rotas, o Vitest e o Playwright. Com Node 20 o `typecheck` falha com `ERR_REQUIRE_ESM`
 - Docker, só para gerar a imagem de produção
 
 ## Como rodar
@@ -34,7 +44,7 @@ cp .env.example .env
 bun run dev
 ```
 
-A aplicação abre em `http://localhost:5173`. A tela `Items` precisa de um back que responda em `VITE_API_URL`. Sem back, ela mostra o estado de erro com o botão de nova tentativa.
+A aplicação abre em `http://localhost:5173` e manda para o `/login`. O login precisa do back respondendo em `VITE_API_URL`, com `CORS_ALLOWED_ORIGINS=http://localhost:5173`. Pelo workspace, `mani run dev --all` sobe os dois.
 
 ## Testes e verificações
 
@@ -58,14 +68,6 @@ O workflow do GitHub roda `lint`, `typecheck`, `test` e `build`, mas não o E2E.
 
 A seção "Tests" do [AGENTS.md](AGENTS.md) lista quais testes cada tipo de mudança exige.
 
-## Como criar um projeto a partir do template
-
-1. Crie o repositório novo a partir deste (botão "Use this template" no GitHub).
-2. Troque `name` em `package.json`, `APP_NAME` em `src/config/app.ts`, o `<title>` em `index.html` e `public/favicon.svg`. O `APP_NAME` é o nome do produto e não é traduzido.
-3. Aponte para o seu back e gere o client, como descrito abaixo.
-4. Crie as features do projeto seguindo o passo a passo do `AGENTS.md`.
-5. Remova a feature `items` quando a primeira feature real estiver completa e puder servir de modelo. Ela existe só para demonstrar o padrão. A seção "How to remove the example feature" do `AGENTS.md` lista os arquivos a apagar e os textos a atualizar, e instrui os agentes a fazer a remoção na mesma tarefa em que concluem a primeira feature real.
-
 ## Como apontar para o back
 
 A única variável de ambiente é `VITE_API_URL`, a URL base do FastAPI, sem barra no final:
@@ -78,13 +80,13 @@ VITE_API_URL=http://localhost:9000
 
 O Vite grava o valor no JavaScript durante o build. Trocar a URL exige um build novo.
 
-### Back-end de referência
+### Back-end
 
-Este template foi feito para funcionar com o `fastapi-api-template`. O `openapi.json` versionado aqui é o schema gerado por ele, e a porta padrão em `.env.example`, 9000, é a porta local dele. As três configurações abaixo já existem nesse back. Se você usar outro back FastAPI, precisa reproduzi-las.
+O back é o `resume-forge`. O `openapi.json` versionado aqui é o schema gerado por ele, e a porta padrão em `.env.example`, 9000, é a porta local dele.
 
 ### CORS
 
-Em desenvolvimento o front roda em `http://localhost:5173` e o back em outra porta, então o back precisa liberar essa origem. No `fastapi-api-template`, isso é a variável `CORS_ALLOWED_ORIGINS` do `.env`:
+Em desenvolvimento o front roda em `http://localhost:5173` e o back em outra porta, então o back precisa liberar essa origem. No back, isso é a variável `CORS_ALLOWED_ORIGINS` do `.env`:
 
 ```
 CORS_ALLOWED_ORIGINS=http://localhost:5173
@@ -94,7 +96,7 @@ Em produção, o valor é a URL pública do front. Vários valores são separado
 
 ### Nomes das operações
 
-O client gerado usa o `operationId` de cada endpoint como nome de função. O padrão do FastAPI produz nomes como `readItemsApiV1ItemsGet`. O back de referência define `generate_unique_id_function` para montar o `operationId` como `<TAG>-<nome da função>`:
+O client gerado usa o `operationId` de cada endpoint como nome de função. O padrão do FastAPI produz nomes como `readMeApiV1MeGet`. O back define `generate_unique_id_function` para montar o `operationId` como `<TAG>-<nome da função>`:
 
 ```python
 def _generate_unique_id(route: APIRoute) -> str:
@@ -106,32 +108,26 @@ def _generate_unique_id(route: APIRoute) -> str:
 app = FastAPI(generate_unique_id_function=_generate_unique_id)
 ```
 
-Com isso, a função `read_items` em um router com `tags=['ITEMS']` vira o `operationId` `ITEMS-read_items`. O client gera a função `itemsReadItems`, as query options `itemsReadItemsOptions()` e a query key `itemsReadItemsQueryKey()`. Renomear a função ou a tag no back renomeia essas funções no front.
+Com isso, a função `read_me` em um router com `tags=['ME']` vira o `operationId` `ME-read_me`. O client gera a função `meReadMe`, as query options `meReadMeOptions()` e a query key `meReadMeQueryKey()`. Renomear a função ou a tag no back renomeia essas funções no front.
 
-### Formato da API de exemplo
+### Erros
 
-A feature `items` usa estes endpoints do back de referência:
-
-- `GET /api/v1/items?offset=0&limit=10` retorna `{ "items": [...], "total": 42, "offset": 0, "limit": 10 }`, onde `total` é o número de registros sem paginação
-- `POST /api/v1/items` recebe `{ "name": "...", "description": "..." | null }` e responde 201
-- `GET`, `PATCH` e `DELETE` em `/api/v1/items/{item_id}`, com `item_id` inteiro. O `DELETE` responde 204, sem corpo
-- Erros no formato padrão do FastAPI, `{ "detail": "..." }` ou `{ "detail": [{ "loc", "msg", "type" }] }`
+O back responde erros no formato padrão do FastAPI, `{ "detail": "..." }` ou `{ "detail": [{ "loc", "msg", "type" }] }`. `getErrorMessage`, em `src/api/errors.ts`, entende os dois.
 
 ## Idiomas
 
-A interface existe em inglês e em português do Brasil. Cada idioma é um arquivo JSON em `src/locales`, com o nome da sua tag: `en-US.json` e `pt-BR.json`. Os dois têm as mesmas chaves, agrupadas por área (`common`, `errors`, `nav`) e por feature (`items`).
+A interface existe em inglês e em português do Brasil. Cada idioma é um arquivo JSON em `src/locales`, com o nome da sua tag: `en-US.json` e `pt-BR.json`. Os dois têm as mesmas chaves, agrupadas por área (`common`, `errors`, `nav`) e por feature (`auth`, `account`).
 
 ```json
 {
   "common": { "save": "Save" },
-  "items": {
-    "toast": { "created": "Item created successfully" },
-    "delete": { "description": "\"{{name}}\" will be permanently deleted." }
+  "auth": {
+    "code": { "description": "We sent a 6-digit code to {{email}}." }
   }
 }
 ```
 
-Um componente lê o texto com `t("items.toast.created")`, de `useTranslation()`. Os dois arquivos entram no bundle principal, e trocar de idioma não faz nenhuma requisição.
+Um componente lê o texto com `t("auth.code.description", { email })`, de `useTranslation()`. Os dois arquivos entram no bundle principal, e trocar de idioma não faz nenhuma requisição.
 
 A aplicação escolhe o idioma ao carregar a página, nesta ordem:
 
@@ -139,7 +135,7 @@ A aplicação escolhe o idioma ao carregar a página, nesta ordem:
 2. o primeiro idioma de `navigator.languages` que existe na aplicação. Outra região do mesmo idioma também vale, então um browser em `pt-PT` abre em `pt-BR`;
 3. `en-US`.
 
-O item "Language" no rodapé da sidebar ("Idioma", com a tela em português) troca o idioma e salva a escolha. A troca atualiza a tela, o título da aba e o atributo `lang` do `<html>` sem recarregar a página.
+O item "Language" no rodapé da sidebar ("Idioma", com a tela em português) e os botões da tela de login trocam o idioma e salvam a escolha. Depois do login vale o idioma salvo na conta. A troca atualiza a tela, o título da aba e o atributo `lang` do `<html>` sem recarregar a página.
 
 Três verificações acompanham os arquivos:
 
@@ -195,7 +191,7 @@ docker run -p 8080:80 meu-front
 
 O `Dockerfile` compila com Bun e copia `dist/` para uma imagem `nginx:1-alpine`. O `nginx.conf` faz três coisas:
 
-- devolve `index.html` para qualquer caminho que não seja um arquivo, para que `/items` funcione ao recarregar a página;
+- devolve `index.html` para qualquer caminho que não seja um arquivo, para que `/settings` funcione ao recarregar a página;
 - envia `Cache-Control: public, max-age=31536000, immutable` para `/assets/`, cujos arquivos têm hash no nome;
 - envia `Cache-Control: no-cache` para `index.html`, para que cada deploy chegue ao usuário na visita seguinte.
 

@@ -62,7 +62,7 @@ describe("the configured instance", () => {
   })
 
   it("tells a translation key from a sentence", () => {
-    expect(isTranslationKey("items.validation.nameRequired")).toBe(true)
+    expect(isTranslationKey("auth.validation.emailRequired")).toBe(true)
     expect(isTranslationKey("An item with this name already exists")).toBe(
       false,
     )

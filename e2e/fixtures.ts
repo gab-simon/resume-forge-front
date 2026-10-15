@@ -1,18 +1,23 @@
-import { test as base, type Page, type Route } from "@playwright/test"
+import { test as base, expect, type Page, type Route } from "@playwright/test"
 
-// By default the E2E tests run against an in-memory copy of the items API, so
-// they need no back end. Set E2E_REAL_API=1 to send the requests to the back
-// end at VITE_API_URL. When you add a feature, add its endpoints to a mock
-// like MockItemsApi below.
+// By default the E2E tests run against an in-memory copy of the API, so they
+// need no back end. Set E2E_REAL_API=1 to send the requests to the back end
+// at VITE_API_URL; the login then needs a real code, so only the specs that
+// do not sign in work in that mode. When you add a feature, add its
+// endpoints to MockApi below.
 export const usesRealApi = process.env.E2E_REAL_API === "1"
 
-interface Item {
-  item_id: number
-  name: string
-  description: string | null
+/** The only code the mocked API accepts. */
+export const VALID_CODE = "123456"
+
+interface User {
+  user_id: number
+  email: string
+  name: string | null
+  ui_language: "pt-BR" | "en-US"
+  resume_language: "pt" | "en"
+  default_template: string
   created_at: string
-  updated_at: string
-  deleted_at: string | null
 }
 
 const CORS_HEADERS = {
@@ -21,95 +26,131 @@ const CORS_HEADERS = {
   "access-control-allow-headers": "*",
 }
 
-// In-memory copy of the /api/v1/items endpoints described in openapi.json.
-export class MockItemsApi {
-  private items: Item[] = []
+const TEMPLATES = [{ name: "classic" }]
+
+// In-memory copy of the /api/v1 endpoints described in openapi.json.
+export class MockApi {
+  private users = new Map<string, User>()
+  private challenges = new Map<string, { email: string; language: string }>()
+  private tokens = new Map<string, string>()
   private nextId = 1
 
-  /** Adds items before the page loads. */
-  seed(count: number): void {
-    for (let index = 1; index <= count; index++) {
-      this.create({
-        name: `Seeded item ${String(index).padStart(2, "0")}`,
-        description: null,
-      })
-    }
-  }
-
   async install(page: Page): Promise<void> {
-    await page.route(/\/api\/v1\/items(\/|\?|$)/, (route) => this.handle(route))
+    await page.route(/\/api\/v1\//, (route) => this.handle(route))
   }
 
-  private create(input: Pick<Item, "name" | "description">): Item {
-    const now = new Date().toISOString()
-    const item: Item = {
-      item_id: this.nextId++,
-      name: input.name,
-      description: input.description ?? null,
-      created_at: now,
-      updated_at: now,
-      deleted_at: null,
+  private issue(user: User, isNewUser: boolean) {
+    const token = `access-${this.nextId++}-${"x".repeat(32)}`
+    const refresh = `refresh-${this.nextId++}-${"x".repeat(32)}`
+    this.tokens.set(token, user.email)
+    const now = Date.now()
+    return {
+      auth_session_id: this.nextId++,
+      access_token: token,
+      token_type: "bearer",
+      access_expires_at: new Date(now + 3_600_000).toISOString(),
+      access_expires_in_seconds: 3600,
+      refresh_token: refresh,
+      refresh_expires_at: new Date(now + 2_592_000_000).toISOString(),
+      refresh_expires_in_seconds: 2_592_000,
+      is_new_user: isNewUser,
+      user,
     }
-    this.items.push(item)
-    return item
+  }
+
+  private currentUser(route: Route): User | undefined {
+    const header = route.request().headers().authorization ?? ""
+    const email = this.tokens.get(header.replace(/^Bearer /, ""))
+    return email ? this.users.get(email) : undefined
   }
 
   private async handle(route: Route): Promise<void> {
     const request = route.request()
-    const url = new URL(request.url())
-    const id = url.pathname.split("/api/v1/items")[1]?.replace(/^\//, "") ?? ""
+    const method = request.method()
+    const path = new URL(request.url()).pathname.replace(/^\/api\/v1/, "")
     const json = (body: unknown, status = 200) =>
       route.fulfill({ status, json: body, headers: CORS_HEADERS })
 
-    if (request.method() === "OPTIONS") {
+    if (method === "OPTIONS") {
       return route.fulfill({ status: 204, headers: CORS_HEADERS })
     }
 
-    if (id === "") {
-      if (request.method() === "GET") {
-        const offset = Number(url.searchParams.get("offset") ?? 0)
-        const limit = Number(url.searchParams.get("limit") ?? 20)
-        return json({
-          items: this.items.slice(offset, offset + limit),
-          total: this.items.length,
-          offset,
-          limit,
-        })
-      }
-      if (request.method() === "POST") {
-        return json(this.create(request.postDataJSON()), 201)
-      }
+    if (method === "POST" && path === "/auth/challenges") {
+      const { email, language } = request.postDataJSON()
+      const challengeId = `challenge-${this.nextId++}-${"x".repeat(32)}`
+      this.challenges.set(challengeId, {
+        email: String(email).toLowerCase(),
+        language: language ?? "pt-BR",
+      })
+      return json(
+        {
+          challenge_id: challengeId,
+          expires_at: new Date(Date.now() + 600_000).toISOString(),
+          expires_in_seconds: 600,
+        },
+        202,
+      )
     }
 
-    const index = this.items.findIndex((item) => item.item_id === Number(id))
-    const existing = this.items[index]
-    if (!existing) {
-      return json({ detail: "Item not found." }, 404)
-    }
-    if (request.method() === "GET") {
-      return json(existing)
-    }
-    if (request.method() === "PATCH") {
-      const updated: Item = {
-        ...existing,
-        ...request.postDataJSON(),
-        updated_at: new Date().toISOString(),
+    const verify = /^\/auth\/challenges\/([^/]+)\/verify$/.exec(path)
+    if (method === "POST" && verify) {
+      const challenge = this.challenges.get(verify[1] ?? "")
+      if (!challenge || request.postDataJSON().code !== VALID_CODE) {
+        return json({ detail: "Invalid or expired authentication code." }, 401)
       }
-      this.items[index] = updated
+      this.challenges.delete(verify[1] ?? "")
+      const existing = this.users.get(challenge.email)
+      const user: User = existing ?? {
+        user_id: this.nextId++,
+        email: challenge.email,
+        name: null,
+        ui_language: challenge.language === "en-US" ? "en-US" : "pt-BR",
+        resume_language: challenge.language === "en-US" ? "en" : "pt",
+        default_template: "classic",
+        created_at: new Date().toISOString(),
+      }
+      this.users.set(user.email, user)
+      return json(this.issue(user, existing === undefined))
+    }
+
+    if (method === "POST" && path === "/auth/logout") {
+      return route.fulfill({ status: 204, headers: CORS_HEADERS })
+    }
+
+    const user = this.currentUser(route)
+    if (!user) {
+      return json({ detail: "Invalid or expired authentication session." }, 401)
+    }
+
+    if (path === "/me" && method === "GET") {
+      return json(user)
+    }
+    if (path === "/me" && method === "PATCH") {
+      const updated: User = { ...user, ...request.postDataJSON() }
+      this.users.set(user.email, updated)
       return json(updated)
     }
-    if (request.method() === "DELETE") {
-      this.items.splice(index, 1)
-      return route.fulfill({ status: 204, headers: CORS_HEADERS })
+    if (path === "/resume/templates" && method === "GET") {
+      return json(TEMPLATES)
     }
-    return json({ detail: "Method Not Allowed" }, 405)
+    return json({ detail: "Not Found" }, 404)
   }
 }
 
-export const test = base.extend<{ itemsApi: MockItemsApi }>({
-  itemsApi: [
+/** Signs in through the login page, which must be open. */
+export async function signIn(page: Page, email = "ana@example.com") {
+  await page.getByLabel(/^(Email|E-mail)$/).fill(email)
+  await page
+    .getByRole("button", { name: /^(Send code|Enviar código)$/ })
+    .click()
+  await page.getByLabel(/^(Code|Código)$/).fill(VALID_CODE)
+  await page.getByRole("button", { name: /^(Sign in|Entrar)$/ }).click()
+}
+
+export const test = base.extend<{ api: MockApi }>({
+  api: [
     async ({ page }, use) => {
-      const api = new MockItemsApi()
+      const api = new MockApi()
       if (!usesRealApi) {
         await api.install(page)
       }
@@ -119,4 +160,4 @@ export const test = base.extend<{ itemsApi: MockItemsApi }>({
   ],
 })
 
-export { expect } from "@playwright/test"
+export { expect }
