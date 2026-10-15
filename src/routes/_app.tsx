@@ -1,12 +1,14 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { AppShell } from "@/components/layout/app-shell"
 
 // Pathless layout route. Every file in src/routes/_app/ renders inside the
-// application shell (sidebar and header).
-//
-// AUTH: to protect these routes, add a `beforeLoad` here that throws
-// `redirect({ to: "/login" })` when there is no session. See AGENTS.md.
+// application shell (sidebar and header) and requires a session.
 export const Route = createFileRoute("/_app")({
+  beforeLoad: ({ context, location }) => {
+    if (!context.auth.isAuthenticated()) {
+      throw redirect({ to: "/login", search: { redirect: location.href } })
+    }
+  },
   component: AppLayout,
 })
 

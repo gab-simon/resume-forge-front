@@ -1,40 +1,18 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "fastapi-api-template",
-    "description": "Template for FastAPI APIs",
+    "title": "resume-forge",
+    "description": "CV como código: currículo LaTeX ATS-friendly a partir de YAML",
     "version": "0.1.0"
   },
   "paths": {
-    "/health/v1/readiness": {
-      "get": {
-        "tags": [
-          "HEALTH"
-        ],
-        "summary": "Health Readiness",
-        "description": "Return the readiness status.\n\nReturns\n-------\nstr\n    The readiness status as a plain-text response.",
-        "operationId": "HEALTH-health_readiness",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/health/v1/liveness": {
       "get": {
         "tags": [
           "HEALTH"
         ],
         "summary": "Health Liveness",
-        "description": "Return the liveness status.\n\nReturns\n-------\nstr\n    The liveness status as a plain-text response.",
+        "description": "Return the liveness status.\n\nThe probe touches no dependency. It fails only when the process cannot\nanswer HTTP requests, which is the case a restart fixes.\n\nReturns\n-------\nstr\n    The liveness status as a plain-text response.",
         "operationId": "HEALTH-health_liveness",
         "responses": {
           "200": {
@@ -50,118 +28,53 @@
         }
       }
     },
-    "/api/v1/items": {
+    "/health/v1/readiness": {
       "get": {
         "tags": [
-          "ITEMS"
+          "HEALTH"
         ],
-        "summary": "Read Items",
-        "description": "List active items with optional filters and pagination.\n\nReturns\n-------\nItemPageResource\n    The paginated active items.",
-        "operationId": "ITEMS-read_items",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Name"
-            }
-          },
-          {
-            "name": "description",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Description"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
-          }
-        ],
+        "summary": "Health Readiness",
+        "description": "Return the readiness status after pinging the database.\n\nReturns\n-------\nstr\n    The readiness status as a plain-text response.\n\nRaises\n------\nHTTPException\n    With status 503 when the database is not configured or does not\n    answer.",
+        "operationId": "HEALTH-health_readiness",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/ItemPageResource"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "type": "string"
                 }
               }
             }
           }
         }
-      },
+      }
+    },
+    "/api/v1/auth/challenges": {
       "post": {
         "tags": [
-          "ITEMS"
+          "AUTHENTICATION"
         ],
-        "summary": "Create Item",
-        "description": "Create an item.\n\nReturns\n-------\nItemResource\n    The created item.\n\nRaises\n------\nHTTPException\n    If the caller is not authorized.",
-        "operationId": "ITEMS-create_item",
+        "summary": "Request Authentication Code",
+        "description": "Request a one-time login code delivered by email.\n\nReturns\n-------\nAuthenticationChallengeResource\n    Public challenge information, the same for known and new emails.\n\nRaises\n------\nHTTPException\n    If the request is invalid, rate-limited, or the email cannot be sent.",
+        "operationId": "AUTHENTICATION-request_authentication_code",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ItemCreateResource"
+                "$ref": "#/components/schemas/AuthenticationChallengeRequestResource"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
-          "201": {
+          "202": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ItemResource"
+                  "$ref": "#/components/schemas/AuthenticationChallengeResource"
                 }
               }
             }
@@ -179,63 +92,25 @@
         }
       }
     },
-    "/api/v1/items/{item_id}": {
-      "get": {
+    "/api/v1/auth/challenges/{challenge_id}/verify": {
+      "post": {
         "tags": [
-          "ITEMS"
+          "AUTHENTICATION"
         ],
-        "summary": "Read Item",
-        "description": "Retrieve one active item by ID.\n\nReturns\n-------\nItemResource\n    The requested item.\n\nRaises\n------\nHTTPException\n    If the item does not exist.",
-        "operationId": "ITEMS-read_item",
+        "summary": "Verify Authentication Code",
+        "description": "Verify a one-time code and issue access and refresh tokens.\n\nThe first verified code of an email creates its account.\n\nReturns\n-------\nAuthenticationSessionResource | JSONResponse\n    Issued token pair, or a generic unauthorized response.\n\nRaises\n------\nHTTPException\n    If the device metadata is invalid or authentication is not configured.",
+        "operationId": "AUTHENTICATION-verify_authentication_code",
         "parameters": [
           {
-            "name": "item_id",
+            "name": "challenge_id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ItemResource"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "ITEMS"
-        ],
-        "summary": "Update Item",
-        "description": "Update an item.\n\nReturns\n-------\nItemResource\n    The updated item.\n\nRaises\n------\nHTTPException\n    If the caller is not authorized or the item does not exist.",
-        "operationId": "ITEMS-update_item",
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Item Id"
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "title": "Challenge Id"
             }
           }
         ],
@@ -244,7 +119,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ItemUpdateResource"
+                "$ref": "#/components/schemas/AuthenticationCodeResource"
               }
             }
           }
@@ -255,10 +130,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ItemResource"
+                  "$ref": "#/components/schemas/AuthenticationSessionResource"
                 }
               }
             }
+          },
+          "401": {
+            "description": "Invalid, expired, consumed, or blocked code."
           },
           "422": {
             "description": "Validation Error",
@@ -271,22 +149,101 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "AUTHENTICATION"
+        ],
+        "summary": "Refresh Authentication Session",
+        "description": "Rotate a refresh token and return a new token pair.\n\nReturns\n-------\nAuthenticationSessionResource | JSONResponse\n    Rotated token pair, or a generic unauthorized response.",
+        "operationId": "AUTHENTICATION-refresh_authentication_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthenticationRefreshResource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationSessionResource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid, expired, consumed, or reused refresh token."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "tags": [
+          "AUTHENTICATION"
+        ],
+        "summary": "Read Authenticated Sessions",
+        "description": "List active device sessions owned by the current user.\n\nReturns\n-------\nAuthenticationSessionListResource\n    Active sessions without token digests.",
+        "operationId": "AUTHENTICATION-read_authenticated_sessions",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationSessionListResource"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/{auth_session_id}": {
       "delete": {
         "tags": [
-          "ITEMS"
+          "AUTHENTICATION"
         ],
-        "summary": "Delete Item",
-        "description": "Soft-delete an item.\n\nRaises\n------\nHTTPException\n    If the caller is not authorized or the item does not exist.",
-        "operationId": "ITEMS-delete_item",
+        "summary": "Delete Authenticated Session",
+        "description": "Revoke one device session owned by the current user.\n\nRaises\n------\nHTTPException\n    If the session does not exist or belongs to another user.",
+        "operationId": "AUTHENTICATION-delete_authenticated_session",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
-            "name": "item_id",
+            "name": "auth_session_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
-              "title": "Item Id"
+              "title": "Auth Session Id"
             }
           }
         ],
@@ -306,10 +263,883 @@
           }
         }
       }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "AUTHENTICATION"
+        ],
+        "summary": "Logout",
+        "description": "Revoke a session using its long-lived refresh token.",
+        "operationId": "AUTHENTICATION-logout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthenticationRefreshResource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "ME"
+        ],
+        "summary": "Read Me",
+        "description": "Return the authenticated user with their preferences.\n\nReturns\n-------\nUserResource\n    The authenticated user.",
+        "operationId": "ME-read_me",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResource"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "ME"
+        ],
+        "summary": "Update Me",
+        "description": "Update the name and preferences of the authenticated user.\n\nReturns\n-------\nUserResource\n    The updated user.\n\nRaises\n------\nHTTPException\n    With status 422 when the template does not exist.",
+        "operationId": "ME-update_me",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdateResource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResource"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/resume": {
+      "get": {
+        "tags": [
+          "RESUME"
+        ],
+        "summary": "Read Resume",
+        "description": "Return the master resume.\n\nReturns\n-------\nResumeResource\n    The validated content of ``cv.yaml``.",
+        "operationId": "RESUME-read_resume",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeResource"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/resume/templates": {
+      "get": {
+        "tags": [
+          "RESUME"
+        ],
+        "summary": "Read Templates",
+        "description": "List the resume templates.\n\nReturns\n-------\nlist[TemplateResource]\n    Templates sorted by name.",
+        "operationId": "RESUME-read_templates",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TemplateResource"
+                  },
+                  "type": "array",
+                  "title": "Response Resume-Read Templates"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/resume/text": {
+      "get": {
+        "tags": [
+          "RESUME"
+        ],
+        "summary": "Read Resume Text",
+        "description": "Return the resume as plain text, to paste in ATS forms.\n\nReturns\n-------\nstr\n    Plain text of the resume.",
+        "operationId": "RESUME-read_resume_text",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Lang",
+              "description": "Language of the resume.",
+              "default": "pt"
+            },
+            "description": "Language of the resume."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/resume/pdf": {
+      "get": {
+        "tags": [
+          "RESUME"
+        ],
+        "summary": "Build Resume Pdf",
+        "description": "Build the resume and return the PDF.\n\nReturns\n-------\nFileResponse\n    The PDF of the resume.",
+        "operationId": "RESUME-build_resume_pdf",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Template name.",
+              "default": "classic",
+              "title": "Template"
+            },
+            "description": "Template name."
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Lang",
+              "description": "Language of the resume.",
+              "default": "pt"
+            },
+            "description": "Language of the resume."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/resume/check": {
+      "get": {
+        "tags": [
+          "RESUME"
+        ],
+        "summary": "Check Resume",
+        "description": "Build the resume and run the ATS check on its PDF.\n\nReturns\n-------\nAtsReportResource\n    The extracted text and the issues found.",
+        "operationId": "RESUME-check_resume",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Template name.",
+              "default": "classic",
+              "title": "Template"
+            },
+            "description": "Template name."
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Lang",
+              "description": "Language of the resume.",
+              "default": "pt"
+            },
+            "description": "Language of the resume."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtsReportResource"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AtsIssueResource": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "AtsIssueResource",
+        "description": "Problem found in the text extracted from a resume PDF."
+      },
+      "AtsReportResource": {
+        "properties": {
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/AtsIssueResource"
+            },
+            "type": "array",
+            "title": "Issues"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "passed",
+          "issues",
+          "text"
+        ],
+        "title": "AtsReportResource",
+        "description": "Result of the ATS check of a built resume."
+      },
+      "AuthenticationChallengeRequestResource": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "title": "Email",
+            "examples": [
+              "ana@example.com"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "pt-BR",
+              "en-US"
+            ],
+            "title": "Language",
+            "description": "Language of the email, and of the account if it is new.",
+            "default": "pt-BR"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "AuthenticationChallengeRequestResource",
+        "description": "HTTP payload used to request a login code by email."
+      },
+      "AuthenticationChallengeResource": {
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 32,
+            "title": "Challenge Id"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expires In Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "challenge_id",
+          "expires_at",
+          "expires_in_seconds"
+        ],
+        "title": "AuthenticationChallengeResource",
+        "description": "Public authentication challenge, the same for known and new emails."
+      },
+      "AuthenticationCodeResource": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "pattern": "^[0-9]{6}$",
+            "title": "Code",
+            "examples": [
+              "482913"
+            ]
+          },
+          "device_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Device Id"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "android",
+              "ios",
+              "web"
+            ],
+            "title": "Platform"
+          },
+          "device_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "device_id",
+          "platform"
+        ],
+        "title": "AuthenticationCodeResource",
+        "description": "HTTP payload used to verify a code for one app or browser installation."
+      },
+      "AuthenticationRefreshResource": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 32,
+            "title": "Refresh Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "AuthenticationRefreshResource",
+        "description": "HTTP payload carrying a rotating refresh token."
+      },
+      "AuthenticationSessionListResource": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuthenticationSessionSummaryResource"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "AuthenticationSessionListResource",
+        "description": "List of active device sessions owned by a user."
+      },
+      "AuthenticationSessionResource": {
+        "properties": {
+          "auth_session_id": {
+            "type": "integer",
+            "title": "Auth Session Id"
+          },
+          "access_token": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "access_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Access Expires At"
+          },
+          "access_expires_in_seconds": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Access Expires In Seconds"
+          },
+          "refresh_token": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Refresh Token"
+          },
+          "refresh_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Refresh Expires At"
+          },
+          "refresh_expires_in_seconds": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Refresh Expires In Seconds"
+          },
+          "is_new_user": {
+            "type": "boolean",
+            "title": "Is New User"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResource"
+          }
+        },
+        "type": "object",
+        "required": [
+          "auth_session_id",
+          "access_token",
+          "access_expires_at",
+          "access_expires_in_seconds",
+          "refresh_token",
+          "refresh_expires_at",
+          "refresh_expires_in_seconds",
+          "is_new_user",
+          "user"
+        ],
+        "title": "AuthenticationSessionResource",
+        "description": "Access and refresh tokens issued after authentication."
+      },
+      "AuthenticationSessionSummaryResource": {
+        "properties": {
+          "auth_session_id": {
+            "type": "integer",
+            "title": "Auth Session Id"
+          },
+          "device_id": {
+            "type": "string",
+            "title": "Device Id"
+          },
+          "device_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Name"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "authenticated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Authenticated At"
+          },
+          "last_used_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Used At"
+          },
+          "access_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Access Expires At"
+          },
+          "absolute_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Absolute Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "auth_session_id",
+          "device_id",
+          "device_name",
+          "platform",
+          "authenticated_at",
+          "last_used_at",
+          "access_expires_at",
+          "absolute_expires_at"
+        ],
+        "title": "AuthenticationSessionSummaryResource",
+        "description": "Safe representation of one authenticated device session."
+      },
+      "Basics": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "headline": {
+            "$ref": "#/components/schemas/LocalizedText"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "links": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Links",
+            "description": "Visible link text, such as linkedin.com/in/user."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "headline",
+          "location",
+          "email"
+        ],
+        "title": "Basics",
+        "description": "Header of the resume. Contact data stays in the page body."
+      },
+      "Bullet": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "title": "Id"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "text": {
+            "$ref": "#/components/schemas/LocalizedText"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/LocalizedText"
+            },
+            "type": "array",
+            "title": "Variants"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "Bullet",
+        "description": "Achievement of an experience, with tags and pre-approved variants."
+      },
+      "Certification": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "issuer": {
+            "type": "string",
+            "title": "Issuer"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "issuer",
+          "year"
+        ],
+        "title": "Certification",
+        "description": "Certification with its official name, issuer and year."
+      },
+      "Education": {
+        "properties": {
+          "institution": {
+            "type": "string",
+            "title": "Institution"
+          },
+          "degree": {
+            "$ref": "#/components/schemas/LocalizedText"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}(-(0[1-9]|1[0-2]))?$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}(-(0[1-9]|1[0-2]))?$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End",
+            "description": "Empty means in progress."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "institution",
+          "degree"
+        ],
+        "title": "Education",
+        "description": "Degree or course."
+      },
+      "Experience": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "title": "Id"
+          },
+          "company": {
+            "type": "string",
+            "title": "Company"
+          },
+          "title": {
+            "$ref": "#/components/schemas/LocalizedText"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End",
+            "description": "Empty means current."
+          },
+          "bullets": {
+            "items": {
+              "$ref": "#/components/schemas/Bullet"
+            },
+            "type": "array",
+            "title": "Bullets"
+          },
+          "technologies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Technologies"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "company",
+          "title",
+          "start"
+        ],
+        "title": "Experience",
+        "description": "Position held at a company."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -323,14 +1153,59 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "ItemCreateResource": {
+      "Lang": {
+        "type": "string",
+        "enum": [
+          "pt",
+          "en"
+        ]
+      },
+      "Language": {
         "properties": {
           "name": {
+            "$ref": "#/components/schemas/LocalizedText"
+          },
+          "level": {
+            "$ref": "#/components/schemas/LocalizedText"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "level"
+        ],
+        "title": "Language",
+        "description": "Spoken language and level."
+      },
+      "LocalizedText": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/Lang"
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "Project": {
+        "properties": {
+          "id": {
             "type": "string",
-            "maxLength": 255,
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
             "title": "Name"
           },
-          "description": {
+          "url": {
             "anyOf": [
               {
                 "type": "string"
@@ -339,59 +1214,171 @@
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "Url"
+          },
+          "description": {
+            "$ref": "#/components/schemas/LocalizedText"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "technologies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Technologies"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description"
+        ],
+        "title": "Project",
+        "description": "Open source, side project or relevant case."
+      },
+      "ResumeResource": {
+        "properties": {
+          "basics": {
+            "$ref": "#/components/schemas/Basics"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "experience": {
+            "items": {
+              "$ref": "#/components/schemas/Experience"
+            },
+            "type": "array",
+            "title": "Experience"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            },
+            "type": "array",
+            "title": "Projects"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/SkillGroup"
+            },
+            "type": "array",
+            "title": "Skills"
+          },
+          "education": {
+            "items": {
+              "$ref": "#/components/schemas/Education"
+            },
+            "type": "array",
+            "title": "Education"
+          },
+          "certifications": {
+            "items": {
+              "$ref": "#/components/schemas/Certification"
+            },
+            "type": "array",
+            "title": "Certifications"
+          },
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/Language"
+            },
+            "type": "array",
+            "title": "Languages"
+          },
+          "section_order": {
+            "items": {
+              "$ref": "#/components/schemas/SectionName"
+            },
+            "type": "array",
+            "title": "Section Order",
+            "description": "Sections in the order they appear. Omitted ones are hidden."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "basics"
+        ],
+        "title": "ResumeResource",
+        "description": "HTTP representation of the master resume, as written in ``cv.yaml``."
+      },
+      "SectionName": {
+        "type": "string",
+        "enum": [
+          "summary",
+          "experience",
+          "projects",
+          "skills",
+          "education",
+          "certifications",
+          "languages"
+        ],
+        "title": "SectionName",
+        "description": "Sections a resume can show, in the default order."
+      },
+      "SkillGroup": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/LocalizedText"
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "category",
+          "items"
+        ],
+        "title": "SkillGroup",
+        "description": "Category of technical skills."
+      },
+      "TemplateResource": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
           }
         },
         "type": "object",
         "required": [
           "name"
         ],
-        "title": "ItemCreateResource",
-        "description": "HTTP payload used to create an item."
+        "title": "TemplateResource",
+        "description": "HTTP representation of a resume template."
       },
-      "ItemPageResource": {
+      "UserResource": {
         "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ItemResource"
-            },
-            "type": "array",
-            "title": "Items"
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
           },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "offset",
-          "limit"
-        ],
-        "title": "ItemPageResource",
-        "description": "Paginated HTTP response containing items."
-      },
-      "ItemResource": {
-        "properties": {
-          "item_id": {
-            "type": "integer",
-            "title": "Item Id"
+          "email": {
+            "type": "string",
+            "title": "Email"
           },
           "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
             "anyOf": [
               {
                 "type": "string"
@@ -400,44 +1387,48 @@
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "Name"
+          },
+          "ui_language": {
+            "type": "string",
+            "enum": [
+              "pt-BR",
+              "en-US"
+            ],
+            "title": "Ui Language"
+          },
+          "resume_language": {
+            "type": "string",
+            "enum": [
+              "pt",
+              "en"
+            ],
+            "title": "Resume Language"
+          },
+          "default_template": {
+            "type": "string",
+            "title": "Default Template"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
             "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Deleted At"
           }
         },
         "type": "object",
         "required": [
-          "item_id",
+          "user_id",
+          "email",
           "name",
-          "description",
-          "created_at",
-          "updated_at",
-          "deleted_at"
+          "ui_language",
+          "resume_language",
+          "default_template",
+          "created_at"
         ],
-        "title": "ItemResource",
-        "description": "HTTP representation of an item."
+        "title": "UserResource",
+        "description": "HTTP representation of the authenticated user."
       },
-      "ItemUpdateResource": {
+      "UserUpdateResource": {
         "properties": {
           "name": {
             "anyOf": [
@@ -451,21 +1442,52 @@
             ],
             "title": "Name"
           },
-          "description": {
+          "ui_language": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "pt-BR",
+                  "en-US"
+                ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "Ui Language"
+          },
+          "resume_language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pt",
+                  "en"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Language"
+          },
+          "default_template": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Template"
           }
         },
         "type": "object",
-        "title": "ItemUpdateResource",
-        "description": "HTTP payload used to partially update an item."
+        "title": "UserUpdateResource",
+        "description": "HTTP payload used to update the name and preferences of the user."
       },
       "ValidationError": {
         "properties": {
@@ -507,6 +1529,12 @@
         ],
         "title": "ValidationError"
       }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
     }
   },
   "tags": [
@@ -515,8 +1543,16 @@
       "description": "Probes de disponibilidade da aplicação."
     },
     {
-      "name": "ITEMS",
-      "description": "CRUD de exemplo da entidade item."
+      "name": "AUTHENTICATION",
+      "description": "Login por código enviado ao e-mail e tokens Bearer."
+    },
+    {
+      "name": "ME",
+      "description": "Usuário autenticado e suas preferências."
+    },
+    {
+      "name": "RESUME",
+      "description": "Currículo de data/cv.yaml, modelos, PDF e checagem ATS."
     }
   ]
 }

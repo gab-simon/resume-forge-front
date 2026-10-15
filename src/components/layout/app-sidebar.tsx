@@ -1,5 +1,10 @@
-import { Link, type LinkProps, useLocation } from "@tanstack/react-router"
-import { Briefcase, Home, type LucideIcon } from "lucide-react"
+import {
+  Link,
+  type LinkProps,
+  useLocation,
+  useNavigate,
+} from "@tanstack/react-router"
+import { Home, type LucideIcon, Settings } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import {
   Sidebar,
@@ -14,6 +19,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { APP_NAME } from "@/config/app"
+import { UserMenu } from "@/features/account/components"
 import type { TranslationKey } from "@/lib/i18n"
 import { LanguageToggle } from "./language-toggle"
 import { ThemeToggle } from "./theme-toggle"
@@ -28,13 +34,14 @@ interface NavItem {
 // "nav" object of every file in src/locales.
 const NAV_ITEMS: NavItem[] = [
   { titleKey: "nav.home", to: "/", icon: Home },
-  { titleKey: "nav.items", to: "/items", icon: Briefcase },
+  { titleKey: "nav.settings", to: "/settings", icon: Settings },
 ]
 
 export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = useLocation({ select: (location) => location.pathname })
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   return (
     <Sidebar collapsible="icon">
@@ -86,6 +93,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <UserMenu onSignedOut={() => void navigate({ to: "/login" })} />
           <LanguageToggle />
           <ThemeToggle />
         </SidebarMenu>

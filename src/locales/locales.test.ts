@@ -11,7 +11,7 @@ const LOCALES: Record<(typeof LANGUAGES)[number], unknown> = {
   "pt-BR": ptBR,
 }
 
-/** Maps each dotted key, such as "items.toast.created", to its text. */
+/** Maps each dotted key, such as "account.toast.saved", to its text. */
 function flatten(value: unknown, prefix = ""): Map<string, string> {
   const entries = new Map<string, string>()
   if (typeof value === "string") {

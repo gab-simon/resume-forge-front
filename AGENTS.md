@@ -2,11 +2,12 @@
 
 Instructions for agents that write code in this repository. Read this whole file before changing anything.
 
-This project is a static React SPA that consumes a FastAPI API. Production has no Node server and no SSR. Code and comments are in English. Interface text comes from the locale files in `src/locales`, which exist for English (`en-US`) and Brazilian Portuguese (`pt-BR`).
+This project is the front end of Resume Forge, a static React SPA that consumes the FastAPI API of `resume-forge`. Production has no Node server and no SSR. Code and comments are in English. Interface text comes from the locale files in `src/locales`, which exist for English (`en-US`) and Brazilian Portuguese (`pt-BR`).
 
 ## Stack
 
 - Bun 1.x as the package manager and script runner
+- Node.js 22 or newer for the route generator, Vitest and Playwright (Node 20 fails with `ERR_REQUIRE_ESM`)
 - Vite 8 for the build and the development server
 - TypeScript 6 in strict mode, with `noUncheckedIndexedAccess`
 - React 19
@@ -46,7 +47,7 @@ Do not add another library without a clear need. If you add one, explain why in 
 
 Follow this order in every task, including small ones.
 
-1. Before writing, read the neighboring code and the `items` feature. Follow the existing pattern, even if you prefer another one.
+1. Before writing, read the neighboring code and the features `auth` and `account`. Follow the existing pattern, even if you prefer another one.
 2. Make the change together with its tests. New code without a test is not done. The "Tests" section says what each kind of change requires.
 3. Run `bun run lint:fix` after editing. It formats the files and sorts the imports. Do not format by hand.
 4. Run `bun run check`. It runs `lint`, `typecheck` and `test`, in that order, and stops at the first one that fails. Fix the failure and run it again until it passes.
@@ -56,7 +57,7 @@ Follow this order in every task, including small ones.
 
 A lint, type or test error points to a problem in the code. Fix the cause. Do not disable the rule, do not loosen the type and do not delete the test.
 
-While working, you can run a single file: `bun run test src/features/items/schemas.test.ts` or `bunx playwright test e2e/items.spec.ts`. Before finishing, run the whole suite.
+While working, you can run a single file: `bun run test src/features/auth/schemas.test.ts` or `bunx playwright test e2e/auth.spec.ts`. Before finishing, run the whole suite.
 
 ## Folder structure
 
@@ -68,7 +69,8 @@ src/
     client.ts           Client configuration: base URL and the entry point for auth
     errors.ts           getErrorMessage, which converts API errors into text
   features/
-    items/              Example feature. Copy this folder as a model
+    auth/               Login by email code, session and tokens
+    account/            Signed-in user, settings page and user menu
       api/
         queries.ts      Query options and read hooks
         mutations.ts    Write hooks, with cache invalidation
@@ -165,10 +167,10 @@ Rules:
 1. Do not write interface text in a component, route or schema. This covers visible text, `placeholder`, `aria-label`, `title`, `sr-only` text, toasts and the tab title. Add a key to both files in `src/locales` and read it with `t()`.
 2. In a component, use `const { t } = useTranslation()` from `react-i18next`. A function that is not a component and builds interface, such as `getItemColumns`, receives `t` as a parameter, and the caller includes `t` in the dependencies of its `useMemo`.
 3. Outside React, use `i18n.t()` from `@/lib/i18n`. The routes do this in `head`. When the language changes, `src/main.tsx` calls `router.invalidate()`, which runs `head` again.
-4. The keys are nested by area: `common`, `errors`, `nav`, and one object per feature, such as `items`. Reuse the keys in `common` for texts such as "Save" and "Cancel". Put the rest under the feature, even when another feature has the same text today.
+4. The keys are nested by area: `common`, `errors`, `nav`, and one object per feature, such as `auth`. Reuse the keys in `common` for texts such as "Save" and "Cancel". Put the rest under the feature, even when another feature has the same text today.
 5. Use `{{name}}` for a value inside a text and pass it as the second argument of `t()`. Do not join translated pieces with `+` or a template string, because the word order changes between languages. When a text has an element in the middle, use `<Trans>` with named tags, as `DataTablePagination` does.
 6. For a text that depends on a number, use the i18next plural keys: `rows_one` and `rows_other` in the files, and `t("rows", { count })` in the code.
-7. A Zod validation message is a translation key, not a sentence. Declare the keys in a constant with `satisfies Record<string, TranslationKey>`, as `src/features/items/schemas.ts` does. `FormMessage` translates the key when it renders. `schemas.ts` imports only the `TranslationKey` type from `@/lib/i18n`, which keeps rule 3 of the architecture.
+7. A Zod validation message is a translation key, not a sentence. Declare the keys in a constant with `satisfies Record<string, TranslationKey>`, as `src/features/auth/schemas.ts` does. `FormMessage` translates the key when it renders. `schemas.ts` imports only the `TranslationKey` type from `@/lib/i18n`, which keeps rule 3 of the architecture.
 8. `getErrorMessage(error, fallback)` receives the fallback already translated, usually `t("errors.unexpected")`. A message that comes from the API is shown in the language the back end wrote it in. The front end does not translate it.
 9. Format numbers, money and dates with `Intl.NumberFormat` and `Intl.DateTimeFormat`, passing `getLanguage()` from `@/lib/i18n` as the locale. Do not write a fixed locale such as `"en-US"` in a formatter. Create the formatter inside the function that formats, or cache one per language, because a formatter created at module load keeps the first language.
 10. Language names are the only interface text outside the locale files. They are in `LANGUAGE_NAMES`, in `src/lib/i18n.ts`, each written in its own language.
@@ -191,7 +193,7 @@ What checks these rules:
 
 ## How to create a new feature
 
-Use `src/features/items` as the model. The example below creates the `orders` feature.
+Use `src/features/account` as the model for a form with a query and a mutation. There is no list feature yet: the removed example `items` shows a paginated list with the four states, a table, dialogs and the matching tests (`git show 9d50242:src/features/items/`). The example below creates the `orders` feature.
 
 1. Confirm that the endpoints are in `openapi.json`. If the back end changed, follow the section "How to update the client when the back end changes".
 2. Add an `orders` object to both files in `src/locales`, with the texts of the screen, and `nav.orders` with the menu title. Add keys to it as you write the next steps.
@@ -200,38 +202,13 @@ Use `src/features/items` as the model. The example below creates the `orders` fe
 5. Create `src/features/orders/api/mutations.ts`. Each hook spreads the generated mutation (`...ordersCreateOrderMutation()`) and, in `onSuccess`, invalidates the queries that became outdated, with the generated query key (`ordersReadOrdersQueryKey()`).
 6. Create the components in `src/features/orders/components/`. The page receives the pagination by props and does not use router hooks. Handle the four states of a list: loading (`DataTableSkeleton`), error (`ErrorState` with `getErrorMessage` and a retry button), empty (`EmptyState`) and with data (`DataTable` and `DataTablePagination`).
 7. Create `src/features/orders/components/index.ts` exporting only the page, and `src/features/orders/index.ts` exporting hooks, query options, schemas and types.
-8. Create the route `src/routes/_app/orders.tsx` by copying `src/routes/_app/items.tsx`. It uses `validateSearch`, `loaderDeps`, `loader` with `prefetchQuery` and renders the page. The tab title in `head` uses `i18n.t("nav.orders")`.
+8. Create the route `src/routes/_app/orders.tsx` by copying `src/routes/_app/settings.tsx` (add `validateSearch` and `loaderDeps` for search params, as the removed `items.tsx` did). It uses `validateSearch`, `loaderDeps`, `loader` with `prefetchQuery` and renders the page. The tab title in `head` uses `i18n.t("nav.orders")`.
 9. Add the menu item to `NAV_ITEMS`, in `src/components/layout/app-sidebar.tsx`, with `titleKey: "nav.orders"`.
 10. Write the tests required for a new feature, described in the "Tests" section: `schemas.test.ts`, the component test of the page and the E2E spec with the mocked API.
 11. Run `bun run lint:fix`, `bun run check`, `bun run test:e2e` and `bun run build`.
 12. If this is the first real feature of the project, follow the section "How to remove the example feature".
 
 About API errors: the generated client throws the response body already parsed from JSON, and not an `Error` instance. Always use `getErrorMessage(error, t("errors.unexpected"))` from `@/api/errors` to get the text. It understands `{ detail: "..." }` and the FastAPI 422 errors, and returns the second argument when the error has no message.
-
-## How to remove the example feature
-
-The `items` feature is not part of any product. It exists to show how a feature is implemented. In a project created from this template, it must be removed as soon as a real feature can take its place as the model.
-
-Remove `items` when the first real feature meets all of these conditions:
-
-- it is complete, and `bun run check` and `bun run test:e2e` pass with it;
-- it has the same elements that `items` demonstrates: a list with the four states, a form with Zod, mutations with cache invalidation, and the three kinds of test.
-
-If the first real feature does not have all of these elements, for example a read-only screen, keep `items` and tell the user in your final answer. Do not remove `items` before a replacement exists, because the steps in this file would be left without an example.
-
-Removal steps, in the same task:
-
-1. Delete `src/features/items/` and `src/routes/_app/items.tsx`.
-2. Remove the `nav.items` entry from `NAV_ITEMS`, in `src/components/layout/app-sidebar.tsx`.
-3. Remove the link to `/items` in `src/routes/_app/index.tsx`.
-4. Remove the `items` object, `nav.items` and `home.openItems` from both files in `src/locales`.
-5. Delete `e2e/items.spec.ts` and remove the `MockItemsApi` class and the `itemsApi` fixture from `e2e/fixtures.ts`. The class and the fixture of the real feature take their place. `e2e/language.spec.ts` opens `/items`. Point it to the screen of the real feature and update the texts it expects.
-6. Confirm that the back end of the project also removed the `item` entity and that `openapi.json` no longer has the `/api/v1/items` endpoints. If it still has them, follow "How to update the client when the back end changes".
-7. Keep what is shared: `src/components/common/`, `src/test/`, `src/api/errors.ts`, `src/lib/` and the other keys of `src/locales`.
-8. Update this file. Replace every mention of `items` as the model with the name of the real feature, including example paths such as `items-page.test.tsx`, and delete this section.
-9. Update the README. Remove the section "Formato da API de exemplo" and the mentions of the `items` feature.
-10. Look for leftovers with a search for `items` and `Items` in `src/`, `e2e/`, `AGENTS.md` and `README.md`. The example comment in `src/test/api.ts` cites the items endpoints and must also cite the real feature instead. `src/lib/i18n.test.ts` uses the key `items.validation.nameRequired` and must use a key of the real feature.
-11. Run `bun run lint:fix`, `bun run check`, `bun run test:e2e` and `bun run build`.
 
 ## Tests
 
@@ -262,7 +239,7 @@ When the behavior of a screen changes, update the existing tests in the same tas
 
 ### What the component test of a page must cover
 
-Use `src/features/items/components/items-page.test.tsx` as the model. It covers:
+Use `src/features/account/components/settings-page.test.tsx` and `src/features/auth/components/login-page.test.tsx` as models. For a list page, the removed `items-page.test.tsx` (`git show 9d50242:src/features/items/components/items-page.test.tsx`) also covers pagination, the empty state and deletion. A page test covers:
 
 - the loading state and the rows after the response;
 - the parameters sent to the API (`offset` and `limit` calculated from the page);
@@ -283,16 +260,16 @@ Use `src/features/items/components/items-page.test.tsx` as the model. It covers:
 - Mock `sonner` with `vi.mock("sonner", ...)` and check `toast.success` and `toast.error`.
 - Find elements the way the user finds them: `getByRole`, `getByLabelText`, `getByText`. Use `data-testid` only when there is no role and no text.
 - The tests run in `en-US`. `src/test/setup.ts` configures i18next in English and restores English after each test, so the expected texts are the ones in `en-US.json`. To test another language, call `await act(() => i18n.changeLanguage("pt-BR"))` inside the test.
-- A schema test compares the validation message with the translation key, such as `"items.validation.nameRequired"`. The component test checks the translated text on screen.
+- A schema test compares the validation message with the translation key, such as `"auth.validation.emailRequired"`. The component test checks the translated text on screen.
 - Wait for asynchronous results with `findBy...` or `waitFor`. Do not use `setTimeout` or fixed pauses.
 - Each test builds its own data and does not depend on another test.
-- The test name describes the behavior: `"shows the empty state when there are no items"`.
+- The test name describes the behavior: `"keeps the user on the code step after a wrong code"`.
 - Do not create test files inside `src/routes`. The routes are thin and the E2E tests cover them.
 
 ### E2E
 
 - Import `test` and `expect` from `./fixtures`, and not from `@playwright/test`. The fixture installs the mocked API on every page.
-- For a new feature, create in `e2e/fixtures.ts` a class like `MockItemsApi`, with the feature endpoints stored in memory, and register it in `test.extend`.
+- For a new feature, add its endpoints to `MockApi` in `e2e/fixtures.ts`, stored in memory. Pages behind the login call `signIn(page)` from the fixtures; the mock accepts only the code `VALID_CODE`.
 - The mocked API must answer in the same format as `openapi.json`. When the schema changes, update the mock.
 - One spec per feature, with the main flow from end to end and the behaviors that depend on the URL.
 - Use selectors by role and name, with `exact: true` when the text is part of another text on the screen.
@@ -308,7 +285,7 @@ Use `src/features/items/components/items-page.test.tsx` as the model. It covers:
 5. Run `bun run check`.
 6. Include `openapi.json` and `src/api/generated` in the same commit. The `Code quality` GitHub workflow fails when the two are out of sync.
 
-The function names come from the OpenAPI `operationId`. The back end builds the `operationId` as `<TAG>-<function name>`, as described in the README: `ITEMS-read_items` generates `itemsReadItems`. If a generated function changes its name unexpectedly, the function or the tag was renamed in the back end.
+The function names come from the OpenAPI `operationId`. The back end builds the `operationId` as `<TAG>-<function name>`, as described in the README: `ME-read_me` generates `meReadMe`. If a generated function changes its name unexpectedly, the function or the tag was renamed in the back end.
 
 ## How to add a shadcn component
 
@@ -322,14 +299,16 @@ Example: `bunx shadcn@latest add textarea`. The CLI reads `components.json`, wri
 
 Add the variable in three places: the schema in `src/config/env.ts`, `src/vite-env.d.ts` and `.env.example`. The name must start with `VITE_`. Read the value through `env`, from `@/config/env`, and never through `import.meta.env` outside that file.
 
-## Adding authentication
+## Authentication
 
-The template has no authentication, because it depends on the back end of each project. To add it, change only these places:
+Login is by a 6-digit code sent to the email; there is no password. These are the only places that know about it:
 
-1. `src/features/auth/`: login and logout hooks, session storage and the form schema. The token storage sits behind an interface (`get`, `set`, `clear`), and the `localStorage` implementation is created in `src/main.tsx`, because of rule 3.
-2. `src/api/client.ts`: follow the `AUTH` comment to send the token and handle the 401 in a single interceptor.
-3. `src/routes/_app.tsx`: add a `beforeLoad` that throws `redirect({ to: "/login" })` when there is no session.
-4. `src/routes/login.tsx`: a route outside `_app/`, which renders the login page of the feature.
+1. `src/features/auth/session.ts`: `createAuthSession` keeps the tokens behind the `SessionStorage` interface, refreshes the access token when it expires within `REFRESH_MARGIN_MS`, and shares one refresh between concurrent requests, because the back end revokes a session whose refresh token is used twice. It has no browser API (rule 3).
+2. `src/main.tsx`: creates the session with `createJsonStorage(window.localStorage, ...)` and a device id from `getOrCreateId` (`src/lib/browser-storage.ts`), passes `getToken` and `onUnauthorized` to `configureApiClient`, puts the session in the router context (`auth`) and in `AuthSessionContext`.
+3. `src/api/client.ts`: sends the token to operations that declare a security scheme and calls `onUnauthorized` on their 401. A 401 of a login operation (a wrong code) does not call it.
+4. `src/routes/_app.tsx`: `beforeLoad` redirects to `/login?redirect=...` without a session. `src/routes/login.tsx` sends a signed-in user to the redirect, which `safeRedirect` limits to paths of this application.
+
+Components reach the session with `useAuthSession()`. After a login or a logout the query cache is cleared, so data of one account never shows up for another. Never read the tokens in a component and never send them anywhere but through the generated client.
 
 ## Definition of done
 

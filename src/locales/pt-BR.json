@@ -23,7 +23,7 @@
   },
   "nav": {
     "home": "Início",
-    "items": "Itens"
+    "settings": "Configurações"
   },
   "sidebar": {
     "title": "Menu lateral",
@@ -52,41 +52,60 @@
   },
   "home": {
     "title": "Início",
-    "description": "Substitua esta página pela primeira tela do seu projeto.",
-    "openItems": "Abrir o exemplo de itens"
+    "greeting": "Olá, {{name}}",
+    "description": "Seus currículos vão ficar aqui. Enquanto isso, defina seus idiomas e o modelo padrão.",
+    "openSettings": "Abrir configurações"
   },
-  "items": {
-    "title": "Itens",
-    "description": "Crie e gerencie seus itens",
-    "add": "Adicionar item",
-    "loadError": "Não foi possível carregar os itens",
-    "empty": {
-      "title": "Você ainda não tem itens",
-      "description": "Adicione um item para começar."
+  "auth": {
+    "pageTitle": "Entrar",
+    "email": {
+      "title": "Entre na sua conta",
+      "description": "Informe seu e-mail e enviaremos um código de 6 dígitos. Não precisa de senha. Um e-mail novo cria uma conta.",
+      "label": "E-mail",
+      "placeholder": "voce@exemplo.com",
+      "submit": "Enviar código"
     },
-    "fields": {
-      "name": "Nome",
-      "description": "Descrição",
-      "noDescription": "Sem descrição"
-    },
-    "form": {
-      "addTitle": "Adicionar item",
-      "addDescription": "Preencha os dados para adicionar um item.",
-      "editTitle": "Editar item",
-      "editDescription": "Atualize os dados do item abaixo."
-    },
-    "delete": {
-      "title": "Excluir item",
-      "description": "\"{{name}}\" será excluído permanentemente. Não é possível desfazer esta ação."
-    },
-    "toast": {
-      "created": "Item criado com sucesso",
-      "updated": "Item atualizado com sucesso",
-      "deleted": "Item excluído com sucesso"
+    "code": {
+      "title": "Confira seu e-mail",
+      "description": "Enviamos um código de 6 dígitos para {{email}}. Ele vale por 10 minutos.",
+      "label": "Código",
+      "submit": "Entrar",
+      "resend": "Enviar outro código",
+      "resent": "Enviamos um novo código",
+      "changeEmail": "Usar outro e-mail"
     },
     "validation": {
-      "nameRequired": "O nome é obrigatório",
-      "nameTooLong": "O nome deve ter no máximo 255 caracteres"
+      "emailRequired": "O e-mail é obrigatório",
+      "emailInvalid": "Informe um e-mail válido",
+      "codeInvalid": "O código tem 6 dígitos"
+    }
+  },
+  "account": {
+    "title": "Configurações",
+    "description": "Seu nome e os idiomas e o modelo usados por padrão.",
+    "loadError": "Não foi possível carregar sua conta",
+    "fields": {
+      "email": "E-mail",
+      "name": "Nome",
+      "uiLanguage": "Idioma da interface",
+      "resumeLanguage": "Idioma do currículo",
+      "resumeLanguageHint": "Idioma dos novos currículos e das exportações. A interface pode usar outro.",
+      "defaultTemplate": "Modelo padrão"
+    },
+    "resumeLanguages": {
+      "pt": "Português",
+      "en": "Inglês"
+    },
+    "menu": {
+      "label": "Conta",
+      "signOut": "Sair"
+    },
+    "toast": {
+      "saved": "Configurações salvas"
+    },
+    "validation": {
+      "nameTooLong": "O nome deve ter no máximo 255 caracteres",
+      "templateRequired": "Escolha um modelo"
     }
   }
 }

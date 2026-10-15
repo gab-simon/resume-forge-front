@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { HealthHealthLivenessData, HealthHealthLivenessResponses, HealthHealthReadinessData, HealthHealthReadinessResponses, ItemsCreateItemData, ItemsCreateItemErrors, ItemsCreateItemResponses, ItemsDeleteItemData, ItemsDeleteItemErrors, ItemsDeleteItemResponses, ItemsReadItemData, ItemsReadItemErrors, ItemsReadItemResponses, ItemsReadItemsData, ItemsReadItemsErrors, ItemsReadItemsResponses, ItemsUpdateItemData, ItemsUpdateItemErrors, ItemsUpdateItemResponses } from './types.gen';
+import type { AuthenticationDeleteAuthenticatedSessionData, AuthenticationDeleteAuthenticatedSessionErrors, AuthenticationDeleteAuthenticatedSessionResponses, AuthenticationLogoutData, AuthenticationLogoutErrors, AuthenticationLogoutResponses, AuthenticationReadAuthenticatedSessionsData, AuthenticationReadAuthenticatedSessionsResponses, AuthenticationRefreshAuthenticationSessionData, AuthenticationRefreshAuthenticationSessionErrors, AuthenticationRefreshAuthenticationSessionResponses, AuthenticationRequestAuthenticationCodeData, AuthenticationRequestAuthenticationCodeErrors, AuthenticationRequestAuthenticationCodeResponses, AuthenticationVerifyAuthenticationCodeData, AuthenticationVerifyAuthenticationCodeErrors, AuthenticationVerifyAuthenticationCodeResponses, HealthHealthLivenessData, HealthHealthLivenessResponses, HealthHealthReadinessData, HealthHealthReadinessResponses, MeReadMeData, MeReadMeResponses, MeUpdateMeData, MeUpdateMeErrors, MeUpdateMeResponses, ResumeBuildResumePdfData, ResumeBuildResumePdfErrors, ResumeBuildResumePdfResponses, ResumeCheckResumeData, ResumeCheckResumeErrors, ResumeCheckResumeResponses, ResumeReadResumeData, ResumeReadResumeResponses, ResumeReadResumeTextData, ResumeReadResumeTextErrors, ResumeReadResumeTextResponses, ResumeReadTemplatesData, ResumeReadTemplatesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -19,21 +19,12 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * Health Readiness
- *
- * Return the readiness status.
- *
- * Returns
- * -------
- * str
- * The readiness status as a plain-text response.
- */
-export const healthHealthReadiness = <ThrowOnError extends boolean = true>(options?: Options<HealthHealthReadinessData, ThrowOnError>): RequestResult<HealthHealthReadinessResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthHealthReadinessResponses, unknown, ThrowOnError>({ url: '/health/v1/readiness', ...options });
-
-/**
  * Health Liveness
  *
  * Return the liveness status.
+ *
+ * The probe touches no dependency. It fails only when the process cannot
+ * answer HTTP requests, which is the case a restart fixes.
  *
  * Returns
  * -------
@@ -43,34 +34,40 @@ export const healthHealthReadiness = <ThrowOnError extends boolean = true>(optio
 export const healthHealthLiveness = <ThrowOnError extends boolean = true>(options?: Options<HealthHealthLivenessData, ThrowOnError>): RequestResult<HealthHealthLivenessResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthHealthLivenessResponses, unknown, ThrowOnError>({ url: '/health/v1/liveness', ...options });
 
 /**
- * Read Items
+ * Health Readiness
  *
- * List active items with optional filters and pagination.
- *
- * Returns
- * -------
- * ItemPageResource
- * The paginated active items.
- */
-export const itemsReadItems = <ThrowOnError extends boolean = true>(options?: Options<ItemsReadItemsData, ThrowOnError>): RequestResult<ItemsReadItemsResponses, ItemsReadItemsErrors, ThrowOnError> => (options?.client ?? client).get<ItemsReadItemsResponses, ItemsReadItemsErrors, ThrowOnError>({ url: '/api/v1/items', ...options });
-
-/**
- * Create Item
- *
- * Create an item.
+ * Return the readiness status after pinging the database.
  *
  * Returns
  * -------
- * ItemResource
- * The created item.
+ * str
+ * The readiness status as a plain-text response.
  *
  * Raises
  * ------
  * HTTPException
- * If the caller is not authorized.
+ * With status 503 when the database is not configured or does not
+ * answer.
  */
-export const itemsCreateItem = <ThrowOnError extends boolean = true>(options: Options<ItemsCreateItemData, ThrowOnError>): RequestResult<ItemsCreateItemResponses, ItemsCreateItemErrors, ThrowOnError> => (options.client ?? client).post<ItemsCreateItemResponses, ItemsCreateItemErrors, ThrowOnError>({
-    url: '/api/v1/items',
+export const healthHealthReadiness = <ThrowOnError extends boolean = true>(options?: Options<HealthHealthReadinessData, ThrowOnError>): RequestResult<HealthHealthReadinessResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthHealthReadinessResponses, unknown, ThrowOnError>({ url: '/health/v1/readiness', ...options });
+
+/**
+ * Request Authentication Code
+ *
+ * Request a one-time login code delivered by email.
+ *
+ * Returns
+ * -------
+ * AuthenticationChallengeResource
+ * Public challenge information, the same for known and new emails.
+ *
+ * Raises
+ * ------
+ * HTTPException
+ * If the request is invalid, rate-limited, or the email cannot be sent.
+ */
+export const authenticationRequestAuthenticationCode = <ThrowOnError extends boolean = true>(options: Options<AuthenticationRequestAuthenticationCodeData, ThrowOnError>): RequestResult<AuthenticationRequestAuthenticationCodeResponses, AuthenticationRequestAuthenticationCodeErrors, ThrowOnError> => (options.client ?? client).post<AuthenticationRequestAuthenticationCodeResponses, AuthenticationRequestAuthenticationCodeErrors, ThrowOnError>({
+    url: '/api/v1/auth/challenges',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -79,54 +76,213 @@ export const itemsCreateItem = <ThrowOnError extends boolean = true>(options: Op
 });
 
 /**
- * Delete Item
+ * Verify Authentication Code
  *
- * Soft-delete an item.
+ * Verify a one-time code and issue access and refresh tokens.
  *
- * Raises
- * ------
- * HTTPException
- * If the caller is not authorized or the item does not exist.
- */
-export const itemsDeleteItem = <ThrowOnError extends boolean = true>(options: Options<ItemsDeleteItemData, ThrowOnError>): RequestResult<ItemsDeleteItemResponses, ItemsDeleteItemErrors, ThrowOnError> => (options.client ?? client).delete<ItemsDeleteItemResponses, ItemsDeleteItemErrors, ThrowOnError>({ url: '/api/v1/items/{item_id}', ...options });
-
-/**
- * Read Item
- *
- * Retrieve one active item by ID.
+ * The first verified code of an email creates its account.
  *
  * Returns
  * -------
- * ItemResource
- * The requested item.
+ * AuthenticationSessionResource | JSONResponse
+ * Issued token pair, or a generic unauthorized response.
  *
  * Raises
  * ------
  * HTTPException
- * If the item does not exist.
+ * If the device metadata is invalid or authentication is not configured.
  */
-export const itemsReadItem = <ThrowOnError extends boolean = true>(options: Options<ItemsReadItemData, ThrowOnError>): RequestResult<ItemsReadItemResponses, ItemsReadItemErrors, ThrowOnError> => (options.client ?? client).get<ItemsReadItemResponses, ItemsReadItemErrors, ThrowOnError>({ url: '/api/v1/items/{item_id}', ...options });
-
-/**
- * Update Item
- *
- * Update an item.
- *
- * Returns
- * -------
- * ItemResource
- * The updated item.
- *
- * Raises
- * ------
- * HTTPException
- * If the caller is not authorized or the item does not exist.
- */
-export const itemsUpdateItem = <ThrowOnError extends boolean = true>(options: Options<ItemsUpdateItemData, ThrowOnError>): RequestResult<ItemsUpdateItemResponses, ItemsUpdateItemErrors, ThrowOnError> => (options.client ?? client).patch<ItemsUpdateItemResponses, ItemsUpdateItemErrors, ThrowOnError>({
-    url: '/api/v1/items/{item_id}',
+export const authenticationVerifyAuthenticationCode = <ThrowOnError extends boolean = true>(options: Options<AuthenticationVerifyAuthenticationCodeData, ThrowOnError>): RequestResult<AuthenticationVerifyAuthenticationCodeResponses, AuthenticationVerifyAuthenticationCodeErrors, ThrowOnError> => (options.client ?? client).post<AuthenticationVerifyAuthenticationCodeResponses, AuthenticationVerifyAuthenticationCodeErrors, ThrowOnError>({
+    url: '/api/v1/auth/challenges/{challenge_id}/verify',
     ...options,
     headers: {
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Refresh Authentication Session
+ *
+ * Rotate a refresh token and return a new token pair.
+ *
+ * Returns
+ * -------
+ * AuthenticationSessionResource | JSONResponse
+ * Rotated token pair, or a generic unauthorized response.
+ */
+export const authenticationRefreshAuthenticationSession = <ThrowOnError extends boolean = true>(options: Options<AuthenticationRefreshAuthenticationSessionData, ThrowOnError>): RequestResult<AuthenticationRefreshAuthenticationSessionResponses, AuthenticationRefreshAuthenticationSessionErrors, ThrowOnError> => (options.client ?? client).post<AuthenticationRefreshAuthenticationSessionResponses, AuthenticationRefreshAuthenticationSessionErrors, ThrowOnError>({
+    url: '/api/v1/auth/refresh',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read Authenticated Sessions
+ *
+ * List active device sessions owned by the current user.
+ *
+ * Returns
+ * -------
+ * AuthenticationSessionListResource
+ * Active sessions without token digests.
+ */
+export const authenticationReadAuthenticatedSessions = <ThrowOnError extends boolean = true>(options?: Options<AuthenticationReadAuthenticatedSessionsData, ThrowOnError>): RequestResult<AuthenticationReadAuthenticatedSessionsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthenticationReadAuthenticatedSessionsResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/auth/sessions',
+    ...options
+});
+
+/**
+ * Delete Authenticated Session
+ *
+ * Revoke one device session owned by the current user.
+ *
+ * Raises
+ * ------
+ * HTTPException
+ * If the session does not exist or belongs to another user.
+ */
+export const authenticationDeleteAuthenticatedSession = <ThrowOnError extends boolean = true>(options: Options<AuthenticationDeleteAuthenticatedSessionData, ThrowOnError>): RequestResult<AuthenticationDeleteAuthenticatedSessionResponses, AuthenticationDeleteAuthenticatedSessionErrors, ThrowOnError> => (options.client ?? client).delete<AuthenticationDeleteAuthenticatedSessionResponses, AuthenticationDeleteAuthenticatedSessionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/auth/sessions/{auth_session_id}',
+    ...options
+});
+
+/**
+ * Logout
+ *
+ * Revoke a session using its long-lived refresh token.
+ */
+export const authenticationLogout = <ThrowOnError extends boolean = true>(options: Options<AuthenticationLogoutData, ThrowOnError>): RequestResult<AuthenticationLogoutResponses, AuthenticationLogoutErrors, ThrowOnError> => (options.client ?? client).post<AuthenticationLogoutResponses, AuthenticationLogoutErrors, ThrowOnError>({
+    url: '/api/v1/auth/logout',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read Me
+ *
+ * Return the authenticated user with their preferences.
+ *
+ * Returns
+ * -------
+ * UserResource
+ * The authenticated user.
+ */
+export const meReadMe = <ThrowOnError extends boolean = true>(options?: Options<MeReadMeData, ThrowOnError>): RequestResult<MeReadMeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<MeReadMeResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/me',
+    ...options
+});
+
+/**
+ * Update Me
+ *
+ * Update the name and preferences of the authenticated user.
+ *
+ * Returns
+ * -------
+ * UserResource
+ * The updated user.
+ *
+ * Raises
+ * ------
+ * HTTPException
+ * With status 422 when the template does not exist.
+ */
+export const meUpdateMe = <ThrowOnError extends boolean = true>(options: Options<MeUpdateMeData, ThrowOnError>): RequestResult<MeUpdateMeResponses, MeUpdateMeErrors, ThrowOnError> => (options.client ?? client).patch<MeUpdateMeResponses, MeUpdateMeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/me',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read Resume
+ *
+ * Return the master resume.
+ *
+ * Returns
+ * -------
+ * ResumeResource
+ * The validated content of ``cv.yaml``.
+ */
+export const resumeReadResume = <ThrowOnError extends boolean = true>(options?: Options<ResumeReadResumeData, ThrowOnError>): RequestResult<ResumeReadResumeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ResumeReadResumeResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/resume',
+    ...options
+});
+
+/**
+ * Read Templates
+ *
+ * List the resume templates.
+ *
+ * Returns
+ * -------
+ * list[TemplateResource]
+ * Templates sorted by name.
+ */
+export const resumeReadTemplates = <ThrowOnError extends boolean = true>(options?: Options<ResumeReadTemplatesData, ThrowOnError>): RequestResult<ResumeReadTemplatesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ResumeReadTemplatesResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/resume/templates',
+    ...options
+});
+
+/**
+ * Read Resume Text
+ *
+ * Return the resume as plain text, to paste in ATS forms.
+ *
+ * Returns
+ * -------
+ * str
+ * Plain text of the resume.
+ */
+export const resumeReadResumeText = <ThrowOnError extends boolean = true>(options?: Options<ResumeReadResumeTextData, ThrowOnError>): RequestResult<ResumeReadResumeTextResponses, ResumeReadResumeTextErrors, ThrowOnError> => (options?.client ?? client).get<ResumeReadResumeTextResponses, ResumeReadResumeTextErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/resume/text',
+    ...options
+});
+
+/**
+ * Build Resume Pdf
+ *
+ * Build the resume and return the PDF.
+ *
+ * Returns
+ * -------
+ * FileResponse
+ * The PDF of the resume.
+ */
+export const resumeBuildResumePdf = <ThrowOnError extends boolean = true>(options?: Options<ResumeBuildResumePdfData, ThrowOnError>): RequestResult<ResumeBuildResumePdfResponses, ResumeBuildResumePdfErrors, ThrowOnError> => (options?.client ?? client).get<ResumeBuildResumePdfResponses, ResumeBuildResumePdfErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/resume/pdf',
+    ...options
+});
+
+/**
+ * Check Resume
+ *
+ * Build the resume and run the ATS check on its PDF.
+ *
+ * Returns
+ * -------
+ * AtsReportResource
+ * The extracted text and the issues found.
+ */
+export const resumeCheckResume = <ThrowOnError extends boolean = true>(options?: Options<ResumeCheckResumeData, ThrowOnError>): RequestResult<ResumeCheckResumeResponses, ResumeCheckResumeErrors, ThrowOnError> => (options?.client ?? client).get<ResumeCheckResumeResponses, ResumeCheckResumeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/resume/check',
+    ...options
 });
