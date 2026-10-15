@@ -1,0 +1,151 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "files": {
+    "includes": [
+      "**",
+      "!**/src/routeTree.gen.ts",
+      "!**/src/api/generated",
+      "!**/src/components/ui",
+      "!**/openapi.json"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "asNeeded"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "suspicious": {
+        "noExplicitAny": "error"
+      },
+      "style": {
+        "noNonNullAssertion": "error",
+        "noParameterAssign": "error",
+        "useSelfClosingElements": "error",
+        "noUselessElse": "error",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "axios": "Architecture rule 1: call the API through the generated client in src/api/generated."
+            },
+            "patterns": [
+              {
+                "group": [
+                  "@/features/*/*",
+                  "@/features/*/*/**",
+                  "!@/features/*/components"
+                ],
+                "message": "Architecture rule 5: import a feature through @/features/<name> or @/features/<name>/components. Inside the same feature, use relative imports."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "fetch": "Architecture rule 1: call the API through the generated client in src/api/generated.",
+                  "XMLHttpRequest": "Architecture rule 1: call the API through the generated client in src/api/generated."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/api/**",
+        "src/features/*/api/**",
+        "src/features/*/schemas.ts",
+        "src/features/*/index.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "axios": "Architecture rule 1: call the API through the generated client in src/api/generated.",
+                  "react-dom": "Architecture rule 3: the data layer must not depend on the DOM.",
+                  "sonner": "Architecture rule 3: show toasts from components, not from the data layer.",
+                  "lucide-react": "Architecture rule 3: the data layer must not import visual modules.",
+                  "tailwind-merge": "Architecture rule 3: the data layer must not import visual modules.",
+                  "class-variance-authority": "Architecture rule 3: the data layer must not import visual modules.",
+                  "@tanstack/react-router": "Architecture rule 3: the data layer must not depend on the web router. Navigate from routes or components.",
+                  "@tanstack/react-table": "Architecture rule 3: the data layer must not import visual modules.",
+                  "react-hook-form": "Architecture rule 3: forms belong to components."
+                },
+                "patterns": [
+                  {
+                    "group": [
+                      "@/components/**",
+                      "**/components/**",
+                      "@/routes/**",
+                      "@/config/env",
+                      "@/lib/utils",
+                      "react-dom/**",
+                      "@radix-ui/**",
+                      "**/*.css",
+                      "**/*.tsx"
+                    ],
+                    "message": "Architecture rule 3: the data layer must not import components, routes, styles or browser-only modules, so a React Native app can reuse it."
+                  },
+                  {
+                    "group": ["@/features/*/*", "@/features/*/*/**"],
+                    "message": "Architecture rule 5: import another feature through @/features/<name>."
+                  }
+                ]
+              }
+            },
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "fetch": "Architecture rule 1: call the API through the generated client in src/api/generated.",
+                  "XMLHttpRequest": "Architecture rule 1: call the API through the generated client in src/api/generated.",
+                  "window": "Architecture rule 3: the data layer must not use browser globals.",
+                  "document": "Architecture rule 3: the data layer must not use browser globals.",
+                  "localStorage": "Architecture rule 3: the data layer must not use browser globals. Inject storage from src/main.tsx.",
+                  "sessionStorage": "Architecture rule 3: the data layer must not use browser globals. Inject storage from src/main.tsx.",
+                  "navigator": "Architecture rule 3: the data layer must not use browser globals.",
+                  "location": "Architecture rule 3: the data layer must not use browser globals.",
+                  "history": "Architecture rule 3: the data layer must not use browser globals."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/features/*/components/index.ts"],
+      "linter": { "rules": { "style": { "noRestrictedImports": "off" } } }
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "common": {
+    "actions": "Actions",
+    "actionsFor": "Actions for {{name}}",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save",
+    "tryAgain": "Try again"
+  },
+  "errors": {
+    "unexpected": "Something went wrong. Please try again.",
+    "loadData": "Could not load the data",
+    "page": {
+      "title": "Error",
+      "description": "Something went wrong while loading this page."
+    },
+    "notFound": {
+      "description": "The page you are looking for was not found.",
+      "goHome": "Go home"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "items": "Items"
+  },
+  "sidebar": {
+    "title": "Sidebar",
+    "description": "Displays the mobile sidebar.",
+    "collapse": "Collapse Sidebar",
+    "open": "Open Sidebar",
+    "toggle": "Toggle Sidebar"
+  },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "label": "Language"
+  },
+  "pagination": {
+    "showing": "Showing {{first}} to {{last}} of <total>{{total}}</total>",
+    "rowsPerPage": "Rows per page",
+    "page": "Page <current>{{page}}</current> of <count>{{pageCount}}</count>",
+    "first": "Go to first page",
+    "previous": "Go to previous page",
+    "next": "Go to next page",
+    "last": "Go to last page"
+  },
+  "home": {
+    "title": "Home",
+    "description": "Replace this page with the first screen of your project.",
+    "openItems": "Open the items example"
+  },
+  "items": {
+    "title": "Items",
+    "description": "Create and manage your items",
+    "add": "Add item",
+    "loadError": "Could not load the items",
+    "empty": {
+      "title": "You don't have any items yet",
+      "description": "Add a new item to get started."
+    },
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "noDescription": "No description"
+    },
+    "form": {
+      "addTitle": "Add item",
+      "addDescription": "Fill in the details to add a new item.",
+      "editTitle": "Edit item",
+      "editDescription": "Update the item details below."
+    },
+    "delete": {
+      "title": "Delete item",
+      "description": "\"{{name}}\" will be permanently deleted. You cannot undo this action."
+    },
+    "toast": {
+      "created": "Item created successfully",
+      "updated": "Item updated successfully",
+      "deleted": "Item deleted successfully"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name must have at most 255 characters"
+    }
+  }
+}

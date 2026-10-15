@@ -1,0 +1,22 @@
+node_modules
+dist
+*.local
+*.log
+
+# Temporary files of the TanStack Router generator
+.tanstack
+
+# Local environment. Copy .env.example to .env.
+.env
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store

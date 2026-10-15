@@ -1,0 +1,92 @@
+{
+  "common": {
+    "actions": "Ações",
+    "actionsFor": "Ações de {{name}}",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "save": "Salvar",
+    "tryAgain": "Tentar novamente"
+  },
+  "errors": {
+    "unexpected": "Algo deu errado. Tente novamente.",
+    "loadData": "Não foi possível carregar os dados",
+    "page": {
+      "title": "Erro",
+      "description": "Algo deu errado ao carregar esta página."
+    },
+    "notFound": {
+      "description": "A página que você procura não foi encontrada.",
+      "goHome": "Ir para o início"
+    }
+  },
+  "nav": {
+    "home": "Início",
+    "items": "Itens"
+  },
+  "sidebar": {
+    "title": "Menu lateral",
+    "description": "Mostra o menu lateral em telas pequenas.",
+    "collapse": "Recolher o menu lateral",
+    "open": "Abrir o menu lateral",
+    "toggle": "Alternar o menu lateral"
+  },
+  "theme": {
+    "label": "Aparência",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema"
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "pagination": {
+    "showing": "Mostrando {{first}} a {{last}} de <total>{{total}}</total>",
+    "rowsPerPage": "Linhas por página",
+    "page": "Página <current>{{page}}</current> de <count>{{pageCount}}</count>",
+    "first": "Ir para a primeira página",
+    "previous": "Ir para a página anterior",
+    "next": "Ir para a próxima página",
+    "last": "Ir para a última página"
+  },
+  "home": {
+    "title": "Início",
+    "description": "Substitua esta página pela primeira tela do seu projeto.",
+    "openItems": "Abrir o exemplo de itens"
+  },
+  "items": {
+    "title": "Itens",
+    "description": "Crie e gerencie seus itens",
+    "add": "Adicionar item",
+    "loadError": "Não foi possível carregar os itens",
+    "empty": {
+      "title": "Você ainda não tem itens",
+      "description": "Adicione um item para começar."
+    },
+    "fields": {
+      "name": "Nome",
+      "description": "Descrição",
+      "noDescription": "Sem descrição"
+    },
+    "form": {
+      "addTitle": "Adicionar item",
+      "addDescription": "Preencha os dados para adicionar um item.",
+      "editTitle": "Editar item",
+      "editDescription": "Atualize os dados do item abaixo."
+    },
+    "delete": {
+      "title": "Excluir item",
+      "description": "\"{{name}}\" será excluído permanentemente. Não é possível desfazer esta ação."
+    },
+    "toast": {
+      "created": "Item criado com sucesso",
+      "updated": "Item atualizado com sucesso",
+      "deleted": "Item excluído com sucesso"
+    },
+    "validation": {
+      "nameRequired": "O nome é obrigatório",
+      "nameTooLong": "O nome deve ter no máximo 255 caracteres"
+    }
+  }
+}

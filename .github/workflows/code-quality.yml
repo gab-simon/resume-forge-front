@@ -1,0 +1,30 @@
+name: Code quality
+
+# Code quality only. This workflow never deploys anything.
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: http://localhost:9000
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+      - name: Fail if src/api/generated is out of date with openapi.json
+        run: bun run generate-client && git diff --exit-code -- src/api/generated
