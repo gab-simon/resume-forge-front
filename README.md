@@ -28,7 +28,7 @@ Não há senha. A tela `/login` pede o e-mail, o back envia um código de 6 díg
 - As rotas dentro de `src/routes/_app/` exigem sessão. Sem ela, `beforeLoad` redireciona para `/login`, que volta à página pedida depois do login.
 - No login, a interface passa para o idioma salvo na conta. Em `/settings`, a pessoa troca o nome, o idioma da interface, o idioma do currículo e o modelo padrão.
 
-Com o back em desenvolvimento (`EMAIL_BACKEND=console`), o código aparece no log da API em vez de ir por e-mail.
+Com o back em desenvolvimento sem `SMTP_HOST`, o código é sempre `123456` e nenhum e-mail é enviado. É o mesmo código que a API simulada do E2E aceita.
 
 ## Pré-requisitos
 
